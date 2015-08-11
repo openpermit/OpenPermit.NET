@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+  For more information on how to configure your ASP.NET application, please visit
+  http://go.microsoft.com/fwlink/?LinkId=169433
+  -->
+<configuration>
+  <appSettings>
+    <add key="OP.Agency.Name" value="Accela Demo Agency" />
+    <add key="OP.Agency.Id" value="0001" />
+    <add key="OP.Agency.Connection" value="id=islandton&amp;env=TEST&amp;u=mdeveloper&amp;p=accela" />
+    <add key="OP.Agency.Adapter" value="OpenPermit.Accela.AccelaOpenPermitAdapter, OpenPermit.Accela" />
+    <add key="OP.Accela.App.Id" value="<Enter Accela App Id From Portal" />
+    <add key="OP.Accela.App.Secret" value="Enter Accela App Secret From Portal" />
+    <add key="OP.Accela.UsAddress.Url" value="http://epermitutils.azurewebsites.net/addr/api/v1.0/parsed" />
+    <add key="Accela.WebSDK.API.Url" value="https://apis.accela.com/v4" />
+    <add key="Accela.WebSDK.OAuth.AuthenticationUrl" value="https://apps-auth.dev.accela.com/oauth2/authorize" />
+    <add key="Accela.WebSDK.OAuth.TokenExchangeUrl" value="https://apps-apis.dev.accela.com/oauth2/token" />
+  </appSettings>
+  <system.web>
+    <compilation debug="true" targetFramework="4.5" />
+    <httpRuntime targetFramework="4.5" />
+  </system.web>
+  <runtime>
+    <assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
+      <dependentAssembly>
+        <assemblyIdentity name="Microsoft.Owin" publicKeyToken="31bf3856ad364e35" culture="neutral" />
+        <bindingRedirect oldVersion="0.0.0.0-3.0.1.0" newVersion="3.0.1.0" />
+      </dependentAssembly>
+      <dependentAssembly>
+        <assemblyIdentity name="System.Web.Cors" publicKeyToken="31bf3856ad364e35" culture="neutral" />
+        <bindingRedirect oldVersion="0.0.0.0-5.2.3.0" newVersion="5.2.3.0" />
+      </dependentAssembly>
+      <dependentAssembly>
+        <assemblyIdentity name="Newtonsoft.Json" publicKeyToken="30ad4fe6b2a6aeed" culture="neutral" />
+        <bindingRedirect oldVersion="0.0.0.0-7.0.0.0" newVersion="7.0.0.0" />
+      </dependentAssembly>
+    </assemblyBinding>
+  </runtime>
+</configuration>
