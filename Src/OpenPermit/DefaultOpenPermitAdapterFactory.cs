@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Web;
 using System.Collections.Generic;
 using System.Configuration;
 
@@ -26,9 +27,10 @@ namespace OpenPermit
                 ConnectionString = ConfigurationManager.AppSettings["OP.Agency.Connection"]
             };
 
-            if (File.Exists("agency.config"))
+            string agencyConfig = Path.Combine(HttpContext.Current.Server.MapPath("/"), "agency.config");
+            if (File.Exists(agencyConfig))
             {
-                agency.Configuration = File.ReadAllText("agency.config");
+                agency.Configuration = File.ReadAllText(agencyConfig);
             }
 
             string adapterTypeName = ConfigurationManager.AppSettings["OP.Agency.Adapter"];

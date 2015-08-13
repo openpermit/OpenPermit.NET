@@ -19,7 +19,7 @@ using AccelaSDKModels = Accela.Web.SDK.Models;
 
 namespace OpenPermit.Accela
 {
-    public class UsAddress
+    internal class UsAddress
     {
         public string AddressNumber { get; set; }
         public string PlaceName { get; set; }
@@ -28,6 +28,18 @@ namespace OpenPermit.Accela
         public string StreetNamePostType { get; set; }
         public string StreetNamePreDirectional { get; set; }
         public string ZipCode { get; set; }
+    }
+
+    public struct StatusMapping
+    {
+        public string Status { get; set; }
+        public string StatusMapped { get; set; }
+    }
+
+    public class AccelaConfig
+    {
+        public string[] Modules { get; set; }
+        public List<StatusMapping> Status { get; set; }
     }
 
     public class AccelaOpenPermitAdapter : IOpenPermitAdapter
@@ -106,44 +118,6 @@ namespace OpenPermit.Accela
             }
         }
 
-        private struct FieldModel
-        {
-            public Field Field { get; set; }
-            public string FeeIndicator { get; set; }
-        }
-
-        private struct TaskStatusMapping
-        {
-            public string TaskStatus { get; set; }
-            public string Status { get; set; }
-            public string Comments { get; set; }
-            public string Action { get; set; }
-        }
-
-        private struct TaskMapping
-        {
-            public string Name { get; set; }
-            public string Task { get; set; }
-            public string SubstateOf { get; set; }
-            public List<TaskStatusMapping> Content { get; set; }
-        }
-
-        private struct AppStatusMapping
-        {
-            public string AppStatus { get; set; }
-            public string Status { get; set; }
-            public string State { get; set; }
-            public string Action { get; set; }
-        }
-
-        private class AccelaConfig
-        {
-            public string[] Modules { get; set; }
-            public Dictionary<string, List<Field>> Elements { get; set; }
-            public List<TaskMapping> History { get; set; }
-            public List<AppStatusMapping> Status { get; set; }
-        }
-
         private string AccelaIdFromLocalId(string localId)
         {
             int index = localId.IndexOf('-');
@@ -199,11 +173,6 @@ namespace OpenPermit.Accela
             Permit permit = new Permit
             {
                 PermitNum = record.customId,
-                PermitType = record.type.group,
-                PermitTypeDesc = record.type.text,
-                PermitClass = record.type.type,
-                WorkClass = record.type.subType,
-                StatusCurrent = record.status.text,
                 Fee = record.totalFee,
                 ProjectName = record.name,
                 EstProjectCost = record.estimatedTotalJobCost,
@@ -212,6 +181,14 @@ namespace OpenPermit.Accela
                 Publisher = context.Agency.Name
             };
 
+            if(record.type != null)
+            {
+                permit.PermitType = record.type.group;
+                permit.PermitTypeDesc = record.type.text;
+                permit.PermitClass = record.type.type;
+                permit.WorkClass = record.type.subType;
+            }
+
             if(record.completeDate != null)
             {
                 permit.CompletedDate = DateTime.Parse(record.completedDate);
@@ -219,12 +196,13 @@ namespace OpenPermit.Accela
 
             if (record.status != null)
             {
+                permit.StatusCurrent = record.status.text;
                 var statusConfig = config.Status;
                 //TODO what happens if there is not configuration for status?
-                var mapping = statusConfig.SingleOrDefault<AppStatusMapping>(m => m.AppStatus == record.status.text);
-                if (mapping.AppStatus != null)
+                var mapping = statusConfig.SingleOrDefault<StatusMapping>(m => m.Status == record.status.text);
+                if (mapping.Status != null)
                 {
-                    permit.StatusCurrentMapped = (mapping.Status != null) ? mapping.Status : record.status.text;
+                    permit.StatusCurrentMapped = (mapping.StatusMapped != null) ? mapping.StatusMapped : record.status.text;
                 }
                 else
                 {
@@ -264,7 +242,7 @@ namespace OpenPermit.Accela
                     }
                     permit.OriginalAddress1 = originalBuilder.ToString();
                     permit.OriginalCity = address.city;
-                    permit.OriginalState = address.state.text;
+                    permit.OriginalState = (address.state != null) ? address.state.text : "";
                     permit.OriginalZip = address.postalCode;
                 }
             }
