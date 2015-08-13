@@ -49,5 +49,50 @@ namespace OpenPermit
                 return Request.CreateResponse(HttpStatusCode.NotFound);
             }
         }
+
+        [Route("{number}/timeline")]
+        public HttpResponseMessage GetPermitTimeline(string number, string options = null)
+        {
+            List<PermitStatus> timeline = Adapter.GetPermitTimeline(number);
+
+            if (timeline != null)
+            {
+                return Request.CreateResponse<List<PermitStatus>>(timeline);
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.NotFound);
+            }
+        }
+
+        [Route("{number}/inspections")]
+        public HttpResponseMessage GetInspections(string number, string options = null)
+        {
+            List<Inspection> inspections = Adapter.GetInspections(number);
+
+            if (inspections != null)
+            {
+                return Request.CreateResponse<List<Inspection>>(inspections);
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.NotFound);
+            }
+        }
+
+        [Route("{number}/inspections/{inspectionId}")]
+        public HttpResponseMessage GetInspection(string number, string inspectionId, string options = null)
+        {
+            Inspection inspection = Adapter.GetInspection(number, inspectionId);
+
+            if (inspection != null)
+            {
+                return Request.CreateResponse<Inspection>(inspection);
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.NotFound);
+            }
+        }
     }
 }

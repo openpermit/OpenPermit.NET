@@ -336,6 +336,11 @@ namespace OpenPermit.Accela
             return ToPermit(record);
         }
 
+        public List<PermitStatus> GetPermitTimeline(string permitNumber)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
 
         #region Inspections
@@ -345,38 +350,41 @@ namespace OpenPermit.Accela
             return GetPermitInspectionsInternal(id);
         }
 
+        private Inspection ToInspection(AccelaSDKModels.Inspection inspectionRecord)
+        {
+            // TODO read status to resultype mapping from backend config to map to open permit
+            // Mapping can be created from /v4/settings/inspections/statuses ?
+            return new Inspection
+            {
+                Id = inspectionRecord.id.ToString(),
+                Inspector = inspectionRecord.inspectorFullName,
+                Result = inspectionRecord.status.text,
+                //TODO do the mapping from config
+                //ResultMapped = from config
+                InspType = inspectionRecord.type.text,
+                //TODO do the mapping from config
+                //InspTypeMapped = from config
+                PermitNum = inspectionRecord.recordId.customId,
+                // TODO verify this
+                ScheduledDate = inspectionRecord.scheduledDate,
+                DesiredDate = inspectionRecord.scheduleDate,
+                InspectionNotes = inspectionRecord.resultComment,
+                RequestDate = inspectionRecord.requestDate,
+                InspectedDate = inspectionRecord.completedDate,
+
+            };
+        }
+
         private List<Inspection> GetPermitInspectionsInternal(string internalId)
         {
-            List<AccelaSDKModels.Inspection> recordInspections = recApi.GetRecordInspections(internalId, BackgroundToken, null, 0, 1000);
+            List<AccelaSDKModels.Inspection> inspectionRecords = recApi.GetRecordInspections(internalId, BackgroundToken, null, 0, 1000);
 
             List<Inspection> inspections = new List<Inspection>();
-            if (recordInspections != null)
+            if (inspectionRecords != null)
             {
-                foreach (var recordInspection in recordInspections)
+                foreach (var inspectionRecord in inspectionRecords)
                 {
-                    // TODO read status to resultype mapping from backend config to map to open permit
-                    // Mapping can be created from /v4/settings/inspections/statuses ?
-
-                    var inspection = new Inspection
-                    {
-                        Id = recordInspection.id.ToString(),
-                        Inspector = recordInspection.inspectorFullName,
-                        Result = recordInspection.status.text, 
-                        //TODO do the mapping from config
-                        //ResultMapped = from config
-                        InspType = recordInspection.type.text,
-                        //TODO do the mapping from config
-                        //InspTypeMapped = from config
-                        PermitNum = recordInspection.recordId.customId,
-                        // TODO verify this
-                        ScheduledDate = recordInspection.scheduledDate,
-                        DesiredDate = recordInspection.scheduleDate,
-                        InspectionNotes = recordInspection.resultComment,
-                        RequestDate = recordInspection.requestDate,
-                        InspectedDate = recordInspection.completedDate,
-
-                    };
-                    inspections.Add(inspection);
+                    inspections.Add(ToInspection(inspectionRecord));
                 }
             }
 
@@ -385,7 +393,8 @@ namespace OpenPermit.Accela
 
         public Inspection GetInspection(string permitNumber, string inspectionId)
         {
-            throw new NotImplementedException();
+            AccelaSDKModels.Inspection inspectionRecord = inspectionApi.GetInspection(inspectionId, BackgroundToken);
+            return ToInspection(inspectionRecord);
         }
 
         public Attachment GetInspectionAttachment(string permitNumber, string inspectionId, string attachmentId)

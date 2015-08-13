@@ -70,6 +70,7 @@ namespace OpenPermit
         #region Permits
         List<Permit> SearchPermits(PermitFilter filter);
         Permit GetPermit(string permitNumber);
+        List<PermitStatus> GetPermitTimeline(string permitNumber);
         #endregion
 
         #region Inspections

@@ -68,4 +68,13 @@ namespace OpenPermit
         public string ContractorZip { get; set; }
         public string ContractorEmail { get; set; }
     }
+
+    public struct PermitStatus
+    {
+        public string PermitNum { get; set; }
+        public string StatusPrevious { get; set; }
+        public DateTime StatusPreviousDate { get; set; }
+        public string StatusPreviousMapped { get; set; }
+        public string Comments { get; set; }
+    }
 }
