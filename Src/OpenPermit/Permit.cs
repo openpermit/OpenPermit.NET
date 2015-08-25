@@ -69,6 +69,9 @@ namespace OpenPermit
         public string ContractorEmail { get; set; }
     }
 
+    /// <summary>
+    /// Structure holding the BLDS Permit Status
+    /// </summary>
     public struct PermitStatus
     {
         public string PermitNum { get; set; }
