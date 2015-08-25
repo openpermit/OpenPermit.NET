@@ -6,7 +6,8 @@ using Newtonsoft.Json.Converters;
 namespace OpenPermit
 {
     /// <summary>
-    /// Class the encapsulates the BSDL Permit Data Structure
+    /// Class the encapsulates the BSDL Permit Data Structure.
+    /// All Fields are required unless specified by additional comments.
     /// </summary>
     public class Permit
     {
