@@ -70,7 +70,8 @@ namespace OpenPermit
     }
 
     /// <summary>
-    /// Structure holding the BLDS Permit Status
+    /// Structure holding the BLDS Permit Status.
+    /// Use comments field for additional status description
     /// </summary>
     public struct PermitStatus
     {
