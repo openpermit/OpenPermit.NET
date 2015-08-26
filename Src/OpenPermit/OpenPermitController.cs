@@ -14,6 +14,10 @@ using System.Net.Http.Headers;
 
 namespace OpenPermit
 {
+    /// <summary>
+    /// Web API for the OpenPermit REST Resources
+    /// JSON in and out follows BLDS format.
+    /// </summary>
     [RoutePrefix("op/permits")]
     [UnhandledExceptionFilter]
     public class OpenPermitController : ApiController
