@@ -5,6 +5,10 @@ using Newtonsoft.Json.Converters;
 
 namespace OpenPermit
 {
+    /// <summary>
+    /// Class the encapsulates the BSDL Permit Data Structure.
+    /// All Fields are required unless specified by additional comments.
+    /// </summary>
     public class Permit
     {
         public string PermitNum { get; set; }
@@ -69,6 +73,10 @@ namespace OpenPermit
         public string ContractorEmail { get; set; }
     }
 
+    /// <summary>
+    /// Structure holding the BLDS Permit Status.
+    /// Use comments field for additional status description
+    /// </summary>
     public struct PermitStatus
     {
         public string PermitNum { get; set; }
