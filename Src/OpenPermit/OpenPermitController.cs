@@ -12,6 +12,9 @@ using System.Web;
 using System.Configuration;
 using System.Net.Http.Headers;
 
+using GeoJSON.Net.Feature;
+using System.Reflection;
+
 namespace OpenPermit
 {
     [RoutePrefix("op/permits")]
@@ -20,6 +23,28 @@ namespace OpenPermit
     {
         public IOpenPermitAdapter Adapter { get; set; }
 
+        private FeatureCollection ToGeoJson(List<Permit> permits)
+        {
+            var features = new List<Feature>(permits.Count);
+
+            foreach(var permit in permits)
+            {
+                var point = new GeoJSON.Net.Geometry.Point(new GeoJSON.Net.Geometry.GeographicPosition(permit.Latitude, permit.Longitude));
+                var properties = new Dictionary<string, object>();
+                foreach(var property in permit.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public))
+                {
+                    var value = property.GetValue(permit, null); 
+                    if(value != null)
+                    {
+                        properties.Add(property.Name, value);
+                    }
+                }
+                features.Add(new Feature(point, properties, permit.PermitNum));
+            }
+
+            return new FeatureCollection(features);
+        }
+
         [Route]
         public HttpResponseMessage GetPermits(string number = null, string address = null)
         {          
@@ -27,6 +52,13 @@ namespace OpenPermit
 
             if (permits != null)
             {
+                // TODO perhaps do this GeoJSON support as a filter?
+                IEnumerable<string> acceptHeader;
+                if(Request.Headers.TryGetValues("Accept", out acceptHeader) && acceptHeader.FirstOrDefault() == "application/vnd.geo+json")
+                {
+                    return Request.CreateResponse<FeatureCollection>(ToGeoJson(permits));
+                }
+
                 return Request.CreateResponse<List<Permit>>(permits);
             }
             else
@@ -88,6 +120,36 @@ namespace OpenPermit
             if (inspection != null)
             {
                 return Request.CreateResponse<Inspection>(inspection);
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.NotFound);
+            }
+        }
+
+        [Route("{number}/contractors")]
+        public HttpResponseMessage GetContractors(string number, string options = null)
+        {
+            List<Contractor> contractors = Adapter.GetContractors(number);
+
+            if (contractors != null)
+            {
+                return Request.CreateResponse<List<Contractor>>(contractors);
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.NotFound);
+            }
+        }
+
+        [Route("{number}/contractors/{contractorId}")]
+        public HttpResponseMessage GetContractor(string number, string contractorId, string options = null)
+        {
+            Contractor contractor = Adapter.GetContractor(number, contractorId);
+
+            if (contractor != null)
+            {
+                return Request.CreateResponse<Contractor>(contractor);
             }
             else
             {

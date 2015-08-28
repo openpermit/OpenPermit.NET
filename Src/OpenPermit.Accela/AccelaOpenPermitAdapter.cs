@@ -388,5 +388,19 @@ namespace OpenPermit.Accela
         }
 
         #endregion
+
+        #region Contractors
+
+        public List<Contractor> GetContractors(string permitNumber)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Contractor GetContractor(string permitNumber, string contractorId)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
     }
 }

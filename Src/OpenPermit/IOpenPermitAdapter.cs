@@ -59,6 +59,24 @@ namespace OpenPermit
         public string Id { get; set; }
     }
 
+    public class Contractor
+    {
+        string CompanyName { get; set; }
+        string Trade { get; set; }
+        string TradeMapped { get; set; }
+        string LicenseNumber { get; set; }
+        string StateLicensed { get; set; }
+        string FullName { get; set; }
+        string CompanyDescription { get; set; }
+        string Phone { get; set; }
+        string Address1 { get; set; }
+        string Address2 { get; set; }
+        string City { get; set; }
+        string State { get; set; }
+        string Zip { get; set; }
+        string Email { get; set; }
+    }
+
     public struct Attachment
     {
         public Stream Content { get; set; }
@@ -77,6 +95,11 @@ namespace OpenPermit
         List<Inspection> GetInspections(string permitNumber);
         Inspection GetInspection(string permitNumber, string inspectionId);
         Attachment GetInspectionAttachment(string permitNumber, string inspectionId, string attachmentId);
+        #endregion
+
+        #region Contractors
+        List<Contractor> GetContractors(string permitNumber);
+        Contractor GetContractor(string permitNumber, string contractorId);
         #endregion
     }
 }
