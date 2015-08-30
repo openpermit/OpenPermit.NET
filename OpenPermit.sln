@@ -7,11 +7,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenPermit", "Src\OpenPermi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenPermit.Tests", "Src\OpenPermit.Tests\OpenPermit.Tests.csproj", "{CCE9CD21-BD51-4013-8CB3-D5D0EE896F4C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenPermitAPI", "Samples\OpenPermitAPISample\OpenPermitAPISample.csproj", "{87257325-DD00-4F0E-BEF6-6D536552CF08}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenPermitAPISample", "Samples\OpenPermitAPISample\OpenPermitAPISample.csproj", "{87257325-DD00-4F0E-BEF6-6D536552CF08}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenPermit.Accela", "Src\OpenPermit.Accela\OpenPermit.Accela.csproj", "{48F789AA-CB16-49EC-B59F-F6DFC5BCEF2F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenPermit.Accela.Tests", "Src\OpenPermit.Accela.Tests\OpenPermit.Accela.Tests.csproj", "{056A5A49-C39B-4CF8-8570-B29A897746E6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenPermit.SQL", "Src\OpenPermit.SQL\OpenPermit.SQL.csproj", "{99B3B75C-EA55-4731-BFD5-2A9490463501}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{056A5A49-C39B-4CF8-8570-B29A897746E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{056A5A49-C39B-4CF8-8570-B29A897746E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{056A5A49-C39B-4CF8-8570-B29A897746E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{99B3B75C-EA55-4731-BFD5-2A9490463501}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{99B3B75C-EA55-4731-BFD5-2A9490463501}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{99B3B75C-EA55-4731-BFD5-2A9490463501}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{99B3B75C-EA55-4731-BFD5-2A9490463501}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
