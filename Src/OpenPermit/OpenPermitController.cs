@@ -18,7 +18,7 @@ using System.Reflection;
 namespace OpenPermit
 {
     /// <summary>
-    /// Web API for the OpenPermit REST Resources
+    /// Web API for the OpenPermit REST Resources.
     /// JSON in and out follows BLDS format.
     /// </summary>
     [RoutePrefix("op/permits")]
