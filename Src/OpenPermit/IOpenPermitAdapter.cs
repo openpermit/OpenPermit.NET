@@ -23,10 +23,19 @@ namespace OpenPermit
         public string Email { get; set; }
     }
 
+    public struct Box
+    {
+        public double MinX { get; set; }
+        public double MinY { get; set; }
+        public double MaxX { get; set; }
+        public double MaxY { get; set; }
+    }
+
     public struct PermitFilter
     {
         public string PermitNumber { get; set; }
         public string Address { get; set; }
+        public Box BoundingBox { get; set; } 
     }
 
     public struct PermitType

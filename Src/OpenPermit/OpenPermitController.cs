@@ -18,7 +18,7 @@ using System.Reflection;
 namespace OpenPermit
 {
     /// <summary>
-    /// Web API for the OpenPermit REST Resources
+    /// Web API for the OpenPermit REST Resources.
     /// JSON in and out follows BLDS format.
     /// </summary>
     [RoutePrefix("op/permits")]
@@ -49,10 +49,66 @@ namespace OpenPermit
             return new FeatureCollection(features);
         }
 
+        /// <summary>
+        /// Implements OpenPermit Specification "GET permits" endpoint
+        /// </summary>
+        /// <param name="number">Permit number</param>
+        /// <param name="address">Address of the location where to retrieve permits</param>
+        /// <param name="bbox">
+        ///     Replaced with the bounding box to search for geospatial results within. The box is defined by "west, south, east, north" coordinates
+        ///     of longitude, latitude, in a EPSG:4326 decimal degrees. This is also commonly referred to by minX, minY, maxX, maxY (where longitude
+        ///     is the X-axis, and latitude is the Y-axis), or also SouthWest corner and NorthEast corner.
+        /// </param>
+        /// <returns>
+        ///     List of permits in BLDS format.
+        ///     
+        ///     Note: This endpoint GeoJSON reponses.
+        /// </returns>
         [Route]
-        public HttpResponseMessage GetPermits(string number = null, string address = null)
-        {          
-            List<Permit> permits = Adapter.SearchPermits(new PermitFilter { PermitNumber = number, Address = address });
+        public HttpResponseMessage GetPermits(string number = null, string address = null, string bbox = null)
+        {
+            var filter = new PermitFilter
+            {
+                PermitNumber = number,
+                Address = address
+            };
+
+            // Bounding box search follows OpenSearch Geo Extensions (see: http://www.opensearch.org/ look under Geo extensions)
+            if(bbox != null)
+            {
+                string[] coordinates = bbox.Split(',');
+                if(coordinates.Length != 4)
+                {
+                    return Request.CreateResponse(HttpStatusCode.BadRequest);
+                }
+
+                double xMin, yMin, xMax, yMax;
+                if(!double.TryParse(coordinates[0], out xMin))
+                {
+                    return Request.CreateResponse(HttpStatusCode.BadRequest);
+                }
+                if (!double.TryParse(coordinates[1], out yMin))
+                {
+                    return Request.CreateResponse(HttpStatusCode.BadRequest);
+                }
+                if (!double.TryParse(coordinates[2], out xMax))
+                {
+                    return Request.CreateResponse(HttpStatusCode.BadRequest);
+                }
+                if (!double.TryParse(coordinates[3], out yMax))
+                {
+                    return Request.CreateResponse(HttpStatusCode.BadRequest);
+                }
+
+                filter.BoundingBox = new Box
+                {
+                    MinX = xMin,
+                    MinY = yMin,
+                    MaxX = xMax,
+                    MaxY = yMax
+                };
+            }
+            List<Permit> permits = Adapter.SearchPermits(filter);
 
             if (permits != null)
             {
