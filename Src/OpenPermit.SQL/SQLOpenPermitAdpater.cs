@@ -8,42 +8,59 @@ using RestSharp;
 using System.Configuration;
 using System.Net;
 using Newtonsoft.Json;
+using System.Web;
 
 namespace OpenPermit.SQL
 {
     public class UsAddress
     {
-        public string AddressNumber { get; set; }
-        public string PlaceName { get; set; }
-        public string StateName { get; set; }
-        public string StreetName { get; set; }
-        public string StreetNamePostType { get; set; }
-        public string StreetNamePreDirectional { get; set; }
-        public string ZipCode { get; set; }
+        public string addressLine { get; set; }
+        public string adminDistrict { get; set; }
+        public string adminDistrict2 { get; set; }
+        public string countryRegion { get; set; }
+        public string formattedAddress { get; set; }
+        public string locality { get; set; }
+        public string postalCode { get; set; }
     }
+
+    /*
+     * "addressLine":"9672 158th Ave SW",
+                  "adminDistrict":"ND",
+                  "adminDistrict2":"Bowman Co.",
+                  "countryRegion":"United States",
+                  "formattedAddress":"9672 158th Ave SW, Bowman, ND 58623",
+                  "locality":"Bowman",
+                  "postalCode":"58623"
+     */
 
     public class SQLOpenPermitAdpater: IOpenPermitAdapter
     {
         private UsAddress ParseAddress(string address)
         {
-            string usAddressUrl = ConfigurationManager.AppSettings.Get("OP.SQL.Usaddress.Url");
+            string addressUrl = ConfigurationManager.AppSettings.Get("OP.SQL.Bing.Map.Url");
+            string key = ConfigurationManager.AppSettings.Get("OP.SQL.Bing.Map.Key");
             RestClient client = new RestClient();
-            client.BaseUrl = new Uri(usAddressUrl);
+            string encodedAddress = WebUtility.UrlEncode(address);
+            string baseUrl = String.Format("{0}?q={1}&key={2}", addressUrl, encodedAddress, key);
+            client.BaseUrl = new Uri(baseUrl);
  
             RestRequest request = new RestRequest();
             request.RequestFormat = DataFormat.Json;
-            request.AddBody(new { address = address });
-            request.Method = Method.POST;
+            request.Method = Method.GET;
 
             IRestResponse response = client.Execute(request);
 
-            if (response.StatusCode != HttpStatusCode.Created)
+            if (response.StatusCode != HttpStatusCode.OK)
             {
                 return null;
             }
 
-            Dictionary<string, UsAddress> addResults = JsonConvert.DeserializeObject<Dictionary<string, UsAddress>>(response.Content);
-            return addResults["address"];
+            //Dictionary<string, object> addResultsL1 = JsonConvert.DeserializeObject<Dictionary<string, object>>(response.Content);
+            dynamic addResultsL1 = JsonConvert.DeserializeObject(response.Content);
+            string addressDyn = JsonConvert.SerializeObject(addResultsL1.resourceSets[0].resources[0].address);
+            UsAddress addResult = JsonConvert.DeserializeObject<UsAddress>(addressDyn);
+
+            return addResult;
         }
 
         public List<Permit> SearchPermits(PermitFilter filter)
@@ -56,11 +73,14 @@ namespace OpenPermit.SQL
             else if(filter.Address != null)
             {
                 UsAddress addr = this.ParseAddress(filter.Address);
-                string addressLine = String.Format("{0} {1} {2} {3}", addr.AddressNumber, 
-                    addr.StreetNamePreDirectional, addr.StreetName, addr.StreetNamePostType);
+                if (addr == null)
+                {
+                    return null;
+                }
+
                 return db.Fetch<Permit>("SELECT * FROM Permit WHERE OriginalAddress1=@0 AND " + 
-                    "OriginalCity=@1 AND OriginalState=@2 AND OriginalZip=@3", 
-                    addressLine, addr.PlaceName, addr.StateName, addr.ZipCode);
+                    "OriginalCity=@1 AND OriginalState=@2 AND OriginalZip=@3",
+                    addr.addressLine, addr.locality, addr.adminDistrict, addr.postalCode);
             }
 
             throw new Exception("Bad Permit Filter Format. Either Permit Number or Address must be entered");
