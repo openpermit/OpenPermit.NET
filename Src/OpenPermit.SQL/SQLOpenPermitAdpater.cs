@@ -57,7 +57,14 @@ namespace OpenPermit.SQL
 
             //Dictionary<string, object> addResultsL1 = JsonConvert.DeserializeObject<Dictionary<string, object>>(response.Content);
             dynamic addResultsL1 = JsonConvert.DeserializeObject(response.Content);
-            string addressDyn = JsonConvert.SerializeObject(addResultsL1.resourceSets[0].resources[0].address);
+            dynamic resourceSets = addResultsL1.resourceSets[0];
+
+            if (resourceSets.estimatedTotal == 0)
+            {
+                return null;
+            }
+
+            string addressDyn = JsonConvert.SerializeObject(resourceSets.resources[0].address);
             UsAddress addResult = JsonConvert.DeserializeObject<UsAddress>(addressDyn);
 
             return addResult;
