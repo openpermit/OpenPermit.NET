@@ -33,7 +33,7 @@ namespace OpenPermit
         public string PermitTypeDesc { get; set; }
         public DateTime StatusDate { get; set; }
         public int TotalSqFt { get; set; }
-        public Uri Link { get; set; }
+        public string Link { get; set; }
         public double Latitude { get; set; }
         public double Longitude { get; set; }
         public double EstProjectCost { get; set; }
