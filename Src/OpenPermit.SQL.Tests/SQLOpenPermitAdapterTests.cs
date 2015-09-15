@@ -5,6 +5,7 @@ using PetaPoco;
 
 namespace OpenPermit.SQL.Tests
 {
+
     [TestClass]
     public class SQLOpenPermitAdapterTests
     {
@@ -22,7 +23,7 @@ namespace OpenPermit.SQL.Tests
         }
 
         [TestMethod]
-        public void TestBadAddress()
+        public void TestMatchBadAddress()
         {
             PermitFilter filter = new PermitFilter();
             filter.Address = "WE$R@cdfg45";
@@ -37,8 +38,6 @@ namespace OpenPermit.SQL.Tests
         [TestMethod]
         public void TestMatchByAddress()
         {
-            this.PopulateTestDB();
-
             PermitFilter filter = new PermitFilter();
             filter.Address = "825 NW 129 Ave Miami, FL 33182";
             IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
@@ -46,12 +45,28 @@ namespace OpenPermit.SQL.Tests
             List<Permit> permits = adapter.SearchPermits(filter);
 
             Assert.AreEqual(permits.Count, 1);
+        }
 
-            this.CleanupTestDB();
+        [TestMethod]
+        public void TestGetExistingPermit()
+        {
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            Permit permit = adapter.GetPermit("PERMNUM_17");
+            Assert.IsNotNull(permit);
+            Assert.AreEqual("34RT56890317", permit.ContractorLicNum);
 
         }
 
-        private void CleanupTestDB()
+        [TestMethod]
+        public void TestGetBadPermit()
+        {
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            Permit permit = adapter.GetPermit("PERMNUM_45");
+            Assert.IsNull(permit);
+        }
+
+        [ClassCleanup]
+        static public void CleanupTestDB()
         {
             Database db = new Database("openpermit");
             db.Execute("DELETE FROM Permit");
@@ -59,7 +74,8 @@ namespace OpenPermit.SQL.Tests
         }
 
 
-        private void PopulateTestDB()
+        [ClassInitialize]
+        static public void PopulateTestDB(TestContext ctx)
         {
             Database db = new Database("openpermit");
             for (int i = 0; i < 30; i++)

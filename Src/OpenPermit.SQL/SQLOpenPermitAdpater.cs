@@ -23,18 +23,16 @@ namespace OpenPermit.SQL
         public string postalCode { get; set; }
     }
 
-    /*
-     * "addressLine":"9672 158th Ave SW",
-                  "adminDistrict":"ND",
-                  "adminDistrict2":"Bowman Co.",
-                  "countryRegion":"United States",
-                  "formattedAddress":"9672 158th Ave SW, Bowman, ND 58623",
-                  "locality":"Bowman",
-                  "postalCode":"58623"
-     */
-
     public class SQLOpenPermitAdpater: IOpenPermitAdapter
     {
+        private Database db;
+
+        public SQLOpenPermitAdpater()
+        {
+            db = new Database("openpermit");
+
+        }
+
         private UsAddress ParseAddress(string address)
         {
             string addressUrl = ConfigurationManager.AppSettings.Get("OP.SQL.Bing.Map.Url");
@@ -55,7 +53,6 @@ namespace OpenPermit.SQL
                 return null;
             }
 
-            //Dictionary<string, object> addResultsL1 = JsonConvert.DeserializeObject<Dictionary<string, object>>(response.Content);
             dynamic addResultsL1 = JsonConvert.DeserializeObject(response.Content);
             dynamic resourceSets = addResultsL1.resourceSets[0];
 
@@ -72,10 +69,9 @@ namespace OpenPermit.SQL
 
         public List<Permit> SearchPermits(PermitFilter filter)
         {
-            Database db = new Database("openpermit");
             if (filter.PermitNumber != null)
             {
-                return db.Fetch<Permit>("SELECT * FROM Permit WHERE PermitNum=@0", filter.PermitNumber);
+                return this.db.Fetch<Permit>("SELECT * FROM Permit WHERE PermitNum=@0", filter.PermitNumber);
             }
             else if(filter.Address != null)
             {
@@ -85,7 +81,7 @@ namespace OpenPermit.SQL
                     return null;
                 }
 
-                return db.Fetch<Permit>("SELECT * FROM Permit WHERE OriginalAddress1=@0 AND " + 
+                return this.db.Fetch<Permit>("SELECT * FROM Permit WHERE OriginalAddress1=@0 AND " + 
                     "OriginalCity=@1 AND OriginalState=@2 AND OriginalZip=@3",
                     addr.addressLine, addr.locality, addr.adminDistrict, addr.postalCode);
             }
@@ -95,7 +91,7 @@ namespace OpenPermit.SQL
 
         public Permit GetPermit(string permitNumber)
         {
-            throw new NotImplementedException();
+            return this.db.SingleOrDefault<Permit>("SELECT * FROM Permit WHERE PermitNum=@0", permitNumber);
         }
 
         public List<PermitStatus> GetPermitTimeline(string permitNumber)
