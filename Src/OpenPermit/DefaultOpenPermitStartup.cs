@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System.Web.Http.Filters;
 using System.Web.Http.Controllers;
+using System.Web.Http.Cors;
 
 [assembly: OwinStartup(typeof(OpenPermit.DefaultOpenPermitStartup))]
 
@@ -59,7 +60,8 @@ namespace OpenPermit
         public void Configuration(IAppBuilder app)
         {
             HttpConfiguration config = new HttpConfiguration();
-            config.EnableCors();
+            var cors = new EnableCorsAttribute("*", "*", "*");
+            config.EnableCors(cors);
             config.MapHttpAttributeRoutes();
 
             var settings = new JsonSerializerSettings();
