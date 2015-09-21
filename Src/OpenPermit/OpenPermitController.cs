@@ -11,9 +11,12 @@ using System.Collections.Specialized;
 using System.Web;
 using System.Configuration;
 using System.Net.Http.Headers;
+using System.Web.Http.Cors;
 
+using Newtonsoft.Json;
 using GeoJSON.Net.Feature;
 using System.Reflection;
+
 
 namespace OpenPermit
 {
@@ -116,7 +119,11 @@ namespace OpenPermit
                 IEnumerable<string> acceptHeader;
                 if(Request.Headers.TryGetValues("Accept", out acceptHeader) && acceptHeader.FirstOrDefault() == "application/vnd.geo+json")
                 {
-                    return Request.CreateResponse<FeatureCollection>(ToGeoJson(permits));
+                    //var response = Request.CreateResponse<FeatureCollection>(ToGeoJson(permits));
+                    var response = Request.CreateResponse(HttpStatusCode.OK);
+                    response.Content = new StringContent(JsonConvert.SerializeObject(ToGeoJson(permits)));
+                    response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/vnd.geo+json");
+                    return response;
                 }
 
                 return Request.CreateResponse<List<Permit>>(permits);
