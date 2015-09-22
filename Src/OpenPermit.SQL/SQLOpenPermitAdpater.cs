@@ -29,8 +29,14 @@ namespace OpenPermit.SQL
 
         public SQLOpenPermitAdpater()
         {
-            db = new Database("openpermit");
+            //db = new Database("openpermit");
+            string connection = ConfigurationManager.AppSettings.Get("OP.Agency.Connection");
+            db = new Database(connection, "System.Data.SqlClient");
+        }
 
+        public SQLOpenPermitAdpater(OpenPermitContext context)
+        {
+            db = new Database(context.Agency.ConnectionString, "System.Data.SqlClient");
         }
 
         private UsAddress ParseAddress(string address)
