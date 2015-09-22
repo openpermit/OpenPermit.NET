@@ -7,8 +7,8 @@
     <ProjectGuid>{BA443584-8A53-4C63-BFCD-099406DF0CC4}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>OpenPermit.MDC.Sync</RootNamespace>
-    <AssemblyName>OpenPermit.MDC.Sync</AssemblyName>
+    <RootNamespace>OpenPermit.SQL.Sync</RootNamespace>
+    <AssemblyName>OpenPermit.SQL.Sync</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -57,11 +57,11 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\OpenPermit.SQL\OpenPermit.SQL.csproj">
+    <ProjectReference Include="..\..\Src\OpenPermit.SQL\OpenPermit.SQL.csproj">
       <Project>{99b3b75c-ea55-4731-bfd5-2a9490463501}</Project>
       <Name>OpenPermit.SQL</Name>
     </ProjectReference>
-    <ProjectReference Include="..\OpenPermit\OpenPermit.csproj">
+    <ProjectReference Include="..\..\Src\OpenPermit\OpenPermit.csproj">
       <Project>{2ecc9559-6281-48fb-95e8-fe218e5e7250}</Project>
       <Name>OpenPermit</Name>
     </ProjectReference>

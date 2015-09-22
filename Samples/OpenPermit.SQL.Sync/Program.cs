@@ -86,7 +86,7 @@ namespace OpenPermit.MDC.Sync
                 permit.ContractorFullName = dynPermit.contractorname;
                 permit.ContractorPhone = dynPermit.contractorphone;
                 if (dynPermit.squarefeet != null)
-                    permit.TotalAccSqFt = dynPermit.squarefeet;
+                    permit.TotalSqFt = dynPermit.squarefeet;
                 permit.Description = dynPermit.proposedusedescription;
                 if (dynPermit.estimatedvalue != null)
                     permit.EstProjectCost = dynPermit.estimatedvalue;
@@ -95,14 +95,14 @@ namespace OpenPermit.MDC.Sync
                     permit.HousingUnits = dynPermit.units;
 
                 //Figure out how to initialized dates
-                permit.AppliedDate = DateTime.Now;
+                /*permit.AppliedDate = DateTime.Now;
                 permit.COIssuedDate = DateTime.Now;
                 permit.CompletedDate = DateTime.Now;
                 permit.ExpiresDate = DateTime.Now;
                 permit.HoldDate = DateTime.Now;
                 permit.IssuedDate = DateTime.Now;
                 permit.StatusDate = DateTime.Now;
-                permit.VoidDate = DateTime.Now;
+                permit.VoidDate = DateTime.Now;*/
 
                 permits.Add(permit);
                 

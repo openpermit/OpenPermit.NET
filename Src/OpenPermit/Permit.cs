@@ -13,7 +13,7 @@ namespace OpenPermit
     {
         public string PermitNum { get; set; }
         public string Description { get; set; }
-        public DateTime IssuedDate { get; set; }
+        public DateTime? IssuedDate { get; set; }
         public DateTime? CompletedDate { get; set; }
         public string StatusCurrent { get; set; }
         public string OriginalAddress1 { get; set; }
@@ -25,13 +25,13 @@ namespace OpenPermit
         public string PermitClass { get; set; }
         public string PermitClassMapped { get; set; }
         public string StatusCurrentMapped { get; set; }
-        public DateTime AppliedDate { get; set; }
+        public DateTime? AppliedDate { get; set; }
         public string WorkClass { get; set; }
         public string WorkClassMapped { get; set; }
         public string PermitType { get; set; }
         public string PermitTypeMapped { get; set; }
         public string PermitTypeDesc { get; set; }
-        public DateTime StatusDate { get; set; }
+        public DateTime? StatusDate { get; set; }
         public int TotalSqFt { get; set; }
         public string Link { get; set; }
         public double Latitude { get; set; }
@@ -47,10 +47,10 @@ namespace OpenPermit
         public string ProposedUse { get; set; }
         public int AddedSqFt { get; set; }
         public int RemovedSqFt { get; set; }
-        public DateTime ExpiresDate { get; set; }
-        public DateTime COIssuedDate { get; set; }
-        public DateTime HoldDate { get; set; }
-        public DateTime VoidDate { get; set; }
+        public DateTime? ExpiresDate { get; set; }
+        public DateTime? COIssuedDate { get; set; }
+        public DateTime? HoldDate { get; set; }
+        public DateTime? VoidDate { get; set; }
         public string ProjectName { get; set; }
         public string ProjectId { get; set; }
         public int TotalFinishedSqFt { get; set; }

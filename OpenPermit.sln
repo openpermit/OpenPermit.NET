@@ -17,7 +17,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenPermit.SQL", "Src\OpenP
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenPermit.SQL.Tests", "Src\OpenPermit.SQL.Tests\OpenPermit.SQL.Tests.csproj", "{59729AB5-077D-495E-B017-E96090CEC7CE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenPermit.MDC.Sync", "Src\OpenPermit.MDC.Sync\OpenPermit.MDC.Sync.csproj", "{BA443584-8A53-4C63-BFCD-099406DF0CC4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenPermit.SQL.Sync", "Samples\OpenPermit.SQL.Sync\OpenPermit.SQL.Sync.csproj", "{BA443584-8A53-4C63-BFCD-099406DF0CC4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
