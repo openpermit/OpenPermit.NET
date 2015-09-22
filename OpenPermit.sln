@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenPermit.SQL", "Src\OpenP
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenPermit.SQL.Tests", "Src\OpenPermit.SQL.Tests\OpenPermit.SQL.Tests.csproj", "{59729AB5-077D-495E-B017-E96090CEC7CE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenPermit.MDC.Sync", "Src\OpenPermit.MDC.Sync\OpenPermit.MDC.Sync.csproj", "{BA443584-8A53-4C63-BFCD-099406DF0CC4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{59729AB5-077D-495E-B017-E96090CEC7CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{59729AB5-077D-495E-B017-E96090CEC7CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{59729AB5-077D-495E-B017-E96090CEC7CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BA443584-8A53-4C63-BFCD-099406DF0CC4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BA443584-8A53-4C63-BFCD-099406DF0CC4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BA443584-8A53-4C63-BFCD-099406DF0CC4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BA443584-8A53-4C63-BFCD-099406DF0CC4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
