@@ -96,17 +96,17 @@ namespace OpenPermit.SQL
 
         public List<PermitStatus> GetPermitTimeline(string permitNumber)
         {
-            throw new NotImplementedException();
+            return this.db.Fetch<PermitStatus>("SELECT * FROM PermitStatus WHERE PermitNum=@0", permitNumber);
         }
 
         public List<Inspection> GetInspections(string permitNumber)
         {
-            throw new NotImplementedException();
+            return this.db.Fetch<Inspection>("SELECT * FROM Inspection WHERE PermitNum=@0", permitNumber);
         }
 
         public Inspection GetInspection(string permitNumber, string inspectionId)
         {
-            throw new NotImplementedException();
+            return this.db.SingleOrDefault<Inspection>("SELECT * FROM Inspection WHERE PermitNum=@0 AND Id=@1", permitNumber, inspectionId);
         }
 
         public Attachment GetInspectionAttachment(string permitNumber, string inspectionId, string attachmentId)

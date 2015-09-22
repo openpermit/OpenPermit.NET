@@ -77,7 +77,7 @@ namespace OpenPermit
     /// Structure holding the BLDS Permit Status.
     /// Use comments field for additional status description
     /// </summary>
-    public struct PermitStatus
+    public class PermitStatus
     {
         public string PermitNum { get; set; }
         public string StatusPrevious { get; set; }
