@@ -65,11 +65,62 @@ namespace OpenPermit.SQL.Tests
             Assert.IsNull(permit);
         }
 
+        [TestMethod]
+        public void TestGetBadPermitTimeline()
+        {
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            List<PermitStatus> timeline = adapter.GetPermitTimeline("PERMNUM_45");
+            Assert.AreEqual(timeline.Count, 0);
+        }
+
+        [TestMethod]
+        public void TestGetPermitTimeline()
+        {
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            List<PermitStatus> timeline = adapter.GetPermitTimeline("PERMNUM_15");
+            Assert.AreEqual(timeline.Count, 10);
+        }
+
+        [TestMethod]
+        public void TestGetBadInspections()
+        {
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            List<Inspection> inspections = adapter.GetInspections("PERMNUM_45");
+            Assert.AreEqual(inspections.Count, 0);
+        }
+
+        [TestMethod]
+        public void TestGetPermitInspections()
+        {
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            List<Inspection> inspections = adapter.GetInspections("PERMNUM_15");
+            Assert.AreEqual(inspections.Count, 10);
+        }
+
+        [TestMethod]
+        public void TestGetBadInspection()
+        {
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            Inspection inspection = adapter.GetInspection("PERMNUM_15", "MYID_25");
+            Assert.IsNull(inspection);
+        }
+
+        [TestMethod]
+        public void TestGetPermitInspection()
+        {
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            Inspection inspection = adapter.GetInspection("PERMNUM_15", "MYID_5");
+            Assert.IsNotNull(inspection);
+            Assert.AreEqual("INSPECTOR_5", inspection.Inspector);
+        }
+
         [ClassCleanup]
         static public void CleanupTestDB()
         {
             Database db = new Database("openpermit");
             db.Execute("DELETE FROM Permit");
+            db.Execute("DELETE FROM PermitStatus");
+            db.Execute("DELETE FROM Inspection");
 
         }
 
@@ -143,6 +194,43 @@ namespace OpenPermit.SQL.Tests
                 permit.WorkClassMapped = "WORKCLASS_" + i.ToString();
 
                 db.Insert("Permit", "PermitNum", false, permit);
+
+            }
+
+            for (int j = 0; j < 10; j++)
+            {
+                PermitStatus status = new PermitStatus();
+                status.PermitNum = "PERMNUM_15";
+                status.StatusPrevious = "STATUS_" + j;
+                status.StatusPreviousDate = DateTime.Now;
+                status.StatusPreviousMapped = "STATUSMAPPED_" + j;
+                status.Comments = "COMMENTS_" + j;
+
+                db.Insert("PermitStatus", "id", true, status);
+
+            }
+
+            for (int j = 0; j < 10; j++)
+            {
+                Inspection inspection = new Inspection();
+                inspection.PermitNum = "PERMNUM_15";
+                inspection.Id = "MYID_" + j;
+                inspection.InspectedDate = DateTime.Now;
+                inspection.InspectionNotes = "MYNOTES_" + j;
+                inspection.Inspector = "INSPECTOR_" + j;
+                inspection.InspType = "TYPE_" + j;
+                inspection.InspTypeMapped = "TYPEMAPPED_" + j;
+                inspection.ReInspection = 0;
+                inspection.RequestDate = DateTime.Now;
+                inspection.Result = "PASSED";
+                inspection.ResultMapped = "PASSED_MAPPED";
+                inspection.ScheduledDate = DateTime.Now;
+                inspection.Description = "DESCRIPTION_" + j;
+                inspection.DesiredDate = DateTime.Now;
+                inspection.ExtraFields = "{'blah': 'blue'}";
+                inspection.Final = 1;
+
+                db.Insert("Inspection", "UniqueId", true, inspection);
 
             }
 
