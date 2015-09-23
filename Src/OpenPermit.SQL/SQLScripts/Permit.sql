@@ -1,18 +1,7 @@
-USE [openpermit]
-GO
-
-/****** Object:  Table [dbo].[Permit]    Script Date: 9/22/2015 12:37:37 PM ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
-SET ANSI_PADDING ON
-GO
 
 CREATE TABLE [dbo].[Permit](
 	[PermitNum] [varchar](100) NOT NULL,
+	[Location] [geography] NULL,
 	[Description] [varchar](100) NULL,
 	[IssuedDate] [datetime2](7) NULL,
 	[CompletedDate] [datetime2](7) NULL,
@@ -78,8 +67,4 @@ CREATE TABLE [dbo].[Permit](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 
-GO
-
-SET ANSI_PADDING OFF
-GO
 
