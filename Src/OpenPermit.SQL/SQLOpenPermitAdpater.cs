@@ -25,18 +25,18 @@ namespace OpenPermit.SQL
 
     public class SQLOpenPermitAdpater: IOpenPermitAdapter
     {
-        private Database db;
+        private string connectionString;
+        private string provider = "System.Data.SqlClient";
 
         public SQLOpenPermitAdpater()
         {
             //db = new Database("openpermit");
-            string connection = ConfigurationManager.AppSettings.Get("OP.Agency.Connection");
-            db = new Database(connection, "System.Data.SqlClient");
+            connectionString = ConfigurationManager.AppSettings.Get("OP.Agency.Connection");
         }
 
         public SQLOpenPermitAdpater(OpenPermitContext context)
         {
-            db = new Database(context.Agency.ConnectionString, "System.Data.SqlClient");
+            connectionString = context.Agency.ConnectionString;
         }
 
         private UsAddress ParseAddress(string address)
@@ -73,11 +73,40 @@ namespace OpenPermit.SQL
             return addResult;
         }
 
+        private string BoundingBoxToWkt(Box box)
+        {
+            StringBuilder wkt = new StringBuilder("POLYGON((");
+            wkt.Append(box.MinX);
+            wkt.Append(' ');
+            wkt.Append(box.MinY);
+            wkt.Append(',');
+            wkt.Append(box.MaxX);
+            wkt.Append(' ');
+            wkt.Append(box.MinY);
+            wkt.Append(',');
+            wkt.Append(box.MaxX);
+            wkt.Append(' ');
+            wkt.Append(box.MaxY);
+            wkt.Append(',');
+            wkt.Append(box.MinX);
+            wkt.Append(' ');
+            wkt.Append(box.MaxY);
+            wkt.Append(',');
+            wkt.Append(box.MinX);
+            wkt.Append(' ');
+            wkt.Append(box.MinY);
+            wkt.Append("))");
+            return wkt.ToString();
+        }
+
         public List<Permit> SearchPermits(PermitFilter filter)
         {
             if (filter.PermitNumber != null)
             {
-                return this.db.Fetch<Permit>("SELECT * FROM Permit WHERE PermitNum=@0", filter.PermitNumber);
+                using (var db = new Database(connectionString, provider))
+                {
+                    return db.Fetch<Permit>("SELECT * FROM Permit WHERE PermitNum=@0", filter.PermitNumber);
+                }
             }
             else if(filter.Address != null)
             {
@@ -87,32 +116,56 @@ namespace OpenPermit.SQL
                     return null;
                 }
 
-                return this.db.Fetch<Permit>("SELECT * FROM Permit WHERE OriginalAddress1=@0 AND " + 
-                    "OriginalCity=@1 AND OriginalState=@2 AND OriginalZip=@3",
-                    addr.addressLine, addr.locality, addr.adminDistrict, addr.postalCode);
+                using (var db = new Database(connectionString, provider))
+                {
+                    return db.Fetch<Permit>("SELECT * FROM Permit WHERE OriginalAddress1=@0 AND " +
+                        "OriginalCity=@1 AND OriginalState=@2 AND OriginalZip=@3",
+                        addr.addressLine, addr.locality, addr.adminDistrict, addr.postalCode);
+                }
+            }
+            else if(filter.BoundingBox != null)
+            {
+                string wkt = BoundingBoxToWkt(filter.BoundingBox);
+                using (var db = new Database(connectionString, provider))
+                {
+                    return db.Fetch<Permit>("SELECT * FROM Permit " +
+                        "WHERE Location.Filter(geography::STGeomFromText('" + wkt + "', 4326))=1");
+                }
             }
 
-            throw new Exception("Bad Permit Filter Format. Either Permit Number or Address must be entered");
+            throw new ArgumentException("Bad Permit Filter Format. Either Permit Number, Address or BoundingBox must be entered");
         }
 
         public Permit GetPermit(string permitNumber)
         {
-            return this.db.SingleOrDefault<Permit>("SELECT * FROM Permit WHERE PermitNum=@0", permitNumber);
+            using (var db = new Database(connectionString, provider))
+            {
+                return db.SingleOrDefault<Permit>("SELECT * FROM Permit WHERE PermitNum=@0", permitNumber);
+            }
         }
 
         public List<PermitStatus> GetPermitTimeline(string permitNumber)
         {
-            return this.db.Fetch<PermitStatus>("SELECT * FROM PermitStatus WHERE PermitNum=@0", permitNumber);
+            using (var db = new Database(connectionString, provider))
+            {
+                return db.Fetch<PermitStatus>("SELECT * FROM PermitStatus WHERE PermitNum=@0", permitNumber);
+            }
         }
 
         public List<Inspection> GetInspections(string permitNumber)
         {
-            return this.db.Fetch<Inspection>("SELECT * FROM Inspection WHERE PermitNum=@0", permitNumber);
+            using (var db = new Database(connectionString, provider))
+            {
+                return db.Fetch<Inspection>("SELECT * FROM Inspection WHERE PermitNum=@0", permitNumber);
+            }
         }
 
         public Inspection GetInspection(string permitNumber, string inspectionId)
         {
-            return this.db.SingleOrDefault<Inspection>("SELECT * FROM Inspection WHERE PermitNum=@0 AND Id=@1", permitNumber, inspectionId);
+            using (var db = new Database(connectionString, provider))
+            {
+                return db.SingleOrDefault<Inspection>("SELECT * FROM Inspection WHERE PermitNum=@0 AND Id=@1", permitNumber, inspectionId);
+            }
         }
 
         public Attachment GetInspectionAttachment(string permitNumber, string inspectionId, string attachmentId)

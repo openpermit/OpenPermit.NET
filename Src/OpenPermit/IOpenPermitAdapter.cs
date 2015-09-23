@@ -23,7 +23,7 @@ namespace OpenPermit
         public string Email { get; set; }
     }
 
-    public struct Box
+    public class Box
     {
         public double MinX { get; set; }
         public double MinY { get; set; }
