@@ -23,18 +23,50 @@ namespace OpenPermit.MDC.Sync
     {
         static void Main(string[] args)
         {
-            List<Permit> permits = getMDCPermits();
+            Console.WriteLine(DateTime.Now);
+            Console.WriteLine("Bringin data from Socrata");
+            List<Permit> permits = getSocrataPermits();
+            Console.WriteLine(DateTime.Now);
+            Console.WriteLine("Cleaning Data from DB");
             Database db = new Database("openpermit");
+            //Cleanup DB to bring new points, this will change once we do overlay new socrata file
+            db.Execute("DELETE FROM Permit");
+            Console.WriteLine(DateTime.Now);
+            Console.WriteLine("Inserting Data into DB");
             foreach (Permit permit in permits)
             {
                 if (permit.PermitNum != null)
                     db.Insert("Permit", "PermitNum", false, permit);
             }
+            Console.WriteLine(DateTime.Now);
+            Console.WriteLine("Populating Geography Field");
+            db.Execute("UPDATE Permit SET Location=geography::Point(Latitude, Longitude, 4326)");
+            Console.WriteLine(DateTime.Now);
+            Console.WriteLine("Done");
         }
 
-        private static List<Permit> getMDCPermits()
+        private static List<Permit> getSocrataPermits()
+        {
+            int offset = 0;
+            int limit = 5000;
+            int pageSize = 0;
+            List<Permit> result = new List<Permit>();
+            do
+            {
+                List<Permit> permitPage = getSocrataPermits(limit, offset);
+                offset = offset + limit;
+                pageSize = permitPage.Count;
+                result.AddRange(permitPage);
+            } while (pageSize == limit);
+
+            return result;
+        }
+
+        private static List<Permit> getSocrataPermits(int limit, int offset)
         {
             string addressUrl = ConfigurationManager.AppSettings.Get("OP.MDC.OpenData.Url");
+            addressUrl = addressUrl + "?$limit={0}&$offset={1}";
+            addressUrl = String.Format(addressUrl, limit, offset);
             RestClient client = new RestClient();
             client.BaseUrl = new Uri(addressUrl);
 
@@ -68,9 +100,22 @@ namespace OpenPermit.MDC.Sync
                     permit.OriginalState = jobAdd.state;
                     permit.OriginalZip = jobAdd.zip;
                     if (dynPermit.jobsite.latitude != null)
+                    {
                         permit.Latitude = dynPermit.jobsite.latitude;
+                        if (permit.Latitude < -90)
+                            permit.Latitude = -90;
+                        else if (permit.Latitude > 90)
+                            permit.Latitude = 90;
+                    }
+
                     if (dynPermit.jobsite.longitude != null)
+                    {
                         permit.Longitude = dynPermit.jobsite.longitude;
+                        if (permit.Longitude < -180)
+                            permit.Longitude = -180;
+                        else if (permit.Longitude > 180)
+                            permit.Longitude = 180;
+                    }
                 }
 
                 if (dynPermit.contractoraddress != null)
