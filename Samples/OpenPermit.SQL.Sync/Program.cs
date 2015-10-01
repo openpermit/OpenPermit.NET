@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using HtmlAgilityPack;
+using Newtonsoft.Json;
 using PetaPoco;
 using RestSharp;
 using System;
@@ -31,18 +32,146 @@ namespace OpenPermit.MDC.Sync
             Database db = new Database("openpermit");
             //Cleanup DB to bring new points, this will change once we do overlay new socrata file
             db.Execute("DELETE FROM Permit");
+            db.Execute("DELETE FROM Inspection");
             Console.WriteLine(DateTime.Now);
             Console.WriteLine("Inserting Data into DB");
             foreach (Permit permit in permits)
             {
                 if (permit.PermitNum != null)
+                {
                     db.Insert("Permit", "PermitNum", false, permit);
+                    Console.WriteLine("Getting Inspections for Permit: " + permit.PermitNum);
+                    List<Inspection> inspections = getMDCInspections(permit.PermitNum);
+                    Console.WriteLine(DateTime.Now);
+                    foreach (Inspection inspection in inspections)
+                    {
+                        db.Insert("Inspection", "UniqueId", true, inspection);
+                    }
+                }
             }
             Console.WriteLine(DateTime.Now);
             Console.WriteLine("Populating Geography Field");
             db.Execute("UPDATE Permit SET Location=geography::Point(Latitude, Longitude, 4326)");
             Console.WriteLine(DateTime.Now);
             Console.WriteLine("Done");
+
+        }
+
+        private static List<Inspection> getMDCInspections( string permitNum )
+        {
+            string relURL = String.Format("BNZAW962.DIA?PERM={0}", permitNum);
+            return getMDCInspections(relURL, new List<Inspection>());
+
+        }
+
+        private static List<Inspection> getMDCInspections( string relURL, List<Inspection> current )
+        {
+            HtmlDocument doc = new HtmlDocument();
+
+            string addressUrl = ConfigurationManager.AppSettings.Get("OP.MDC.Inspection.Url");
+            addressUrl = addressUrl + relURL;
+
+            string content = DoGet(addressUrl);
+            if (content == null)
+            {
+                return current;
+            }
+            //This patch is need to fix html syntax error
+            content = content.Replace("<b>Permit Status</b>           \r\n  <td",
+                "<b>Permit Status</b></a></font></td>           \r\n  <td");
+            doc.LoadHtml(content);
+
+            List<Inspection> result = current;
+
+            string permitNumber = "";
+            string inspectorName = "";
+            string inspectionType = "";
+            string disposition = "";
+            string clerkName = "";
+            string requestDate = "";
+            string inspectionDate = "";
+            string resultDate = "";
+            string inspectionTime = "";
+            string comments = "";
+
+            string prevText = "";
+
+            foreach(HtmlNode td in doc.DocumentNode.SelectNodes("//table/tr/td"))
+            {
+                string inText = td.InnerText;
+                inText = inText.Trim().Replace("&nbsp;", "");
+
+                switch (prevText)
+                {
+                    case "Permit Number:":
+                        permitNumber = inText;
+                        break;
+                    case "Inspector Name:":
+                        inspectorName = inText;
+                        break;
+                    case "Inspection Type:":
+                        inspectionType = inText;
+                        break;
+                    case "Disposition:":
+                        disposition = inText;
+                        break;
+                    case "Clerk Name:":
+                        clerkName = inText;
+                        break;
+                    case "Request Date:":
+                        requestDate = inText;
+                        break;
+                    case "Inspection Date:":
+                        inspectionDate = inText;
+                        break;
+                    case "Result Date:":
+                        resultDate = inText;
+                        break;
+                    case "Inspection Time:":
+                        inspectionTime = inText;
+                        break;
+                    case "Comments:":
+                        comments = inText;
+                        Inspection inspection = new Inspection();
+                        inspection.PermitNum = permitNumber;
+                        if (requestDate != "")
+                            inspection.RequestDate = Convert.ToDateTime(requestDate);
+                        inspection.InspType = inspectionType;
+                        if (inspectionDate != "")
+                            inspection.ScheduledDate = Convert.ToDateTime(inspectionDate);
+                        if (resultDate != "")
+                            inspection.InspectedDate = Convert.ToDateTime(resultDate);
+                        inspection.Inspector = inspectorName;
+                        inspection.Result = disposition;
+                        inspection.InspectionNotes = comments;
+                        inspection.ExtraFields = String.Format("ClerkName:{0},InspectionTime:{1}", clerkName, inspectionTime);
+                        result.Add(inspection);
+                        inspectorName = "";
+                        inspectionType = "";
+                        disposition = "";
+                        clerkName = "";
+                        requestDate = "";
+                        inspectionDate = "";
+                        resultDate = "";
+                        inspectionTime = "";
+                        comments = "";
+                        break;                    
+                }
+
+                if (inText == "Next Page")
+                {
+                    string nextURL = td.FirstChild.LastChild.GetAttributeValue("href", "");
+                    if (nextURL != "")
+                    {
+                        return getMDCInspections(nextURL, result);
+                    }
+                }
+
+                prevText = inText;
+            }
+
+            return result;
+
         }
 
         private static List<Permit> getSocrataPermits()
@@ -62,13 +191,10 @@ namespace OpenPermit.MDC.Sync
             return result;
         }
 
-        private static List<Permit> getSocrataPermits(int limit, int offset)
+        private static string DoGet( string url)
         {
-            string addressUrl = ConfigurationManager.AppSettings.Get("OP.MDC.OpenData.Url");
-            addressUrl = addressUrl + "?$limit={0}&$offset={1}";
-            addressUrl = String.Format(addressUrl, limit, offset);
             RestClient client = new RestClient();
-            client.BaseUrl = new Uri(addressUrl);
+            client.BaseUrl = new Uri(url);
 
             RestRequest request = new RestRequest();
             request.RequestFormat = DataFormat.Json;
@@ -81,7 +207,22 @@ namespace OpenPermit.MDC.Sync
                 return null;
             }
 
-            dynamic dynPermits = JsonConvert.DeserializeObject(response.Content);
+            return response.Content;
+        }
+
+        private static List<Permit> getSocrataPermits(int limit, int offset)
+        {
+            string addressUrl = ConfigurationManager.AppSettings.Get("OP.MDC.OpenData.Url");
+            addressUrl = addressUrl + "?$limit={0}&$offset={1}";
+            addressUrl = String.Format(addressUrl, limit, offset);
+            string content = DoGet(addressUrl);
+
+            if (content == null)
+            {
+                return null;
+            }
+
+            dynamic dynPermits = JsonConvert.DeserializeObject(content);
 
             List<Permit> permits = new List<Permit>();
 
@@ -138,16 +279,6 @@ namespace OpenPermit.MDC.Sync
                 permit.PermitTypeDesc = dynPermit.typecodedescription;
                 if (dynPermit.units != null)
                     permit.HousingUnits = dynPermit.units;
-
-                //Figure out how to initialized dates
-                /*permit.AppliedDate = DateTime.Now;
-                permit.COIssuedDate = DateTime.Now;
-                permit.CompletedDate = DateTime.Now;
-                permit.ExpiresDate = DateTime.Now;
-                permit.HoldDate = DateTime.Now;
-                permit.IssuedDate = DateTime.Now;
-                permit.StatusDate = DateTime.Now;
-                permit.VoidDate = DateTime.Now;*/
 
                 permits.Add(permit);
                 

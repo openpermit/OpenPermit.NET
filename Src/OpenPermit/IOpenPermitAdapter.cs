@@ -54,14 +54,14 @@ namespace OpenPermit
         public string InspTypeMapped { get; set; }
         public string Result { get; set; }
         public string ResultMapped { get; set; }
-        public DateTime ScheduledDate { get; set; }
-        public DateTime InspectedDate { get; set; }
+        public DateTime? ScheduledDate { get; set; }
+        public DateTime? InspectedDate { get; set; }
         public string InspectionNotes { get; set; }
         public string Description { get; set; }
         // TODO should this be bool and the have Json.NET serialize as 0/1?
         public int Final { get; set; }
-        public DateTime RequestDate { get; set; }
-        public DateTime DesiredDate { get; set; }
+        public DateTime? RequestDate { get; set; }
+        public DateTime? DesiredDate { get; set; }
         public int ReInspection { get; set; }
         public string Inspector { get; set;}
         public object ExtraFields {get; set;}
