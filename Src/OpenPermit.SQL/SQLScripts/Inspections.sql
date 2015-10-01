@@ -2,8 +2,8 @@
 CREATE TABLE [dbo].[Inspection](
 	[UniqueId] [int] IDENTITY(1,1) NOT NULL,
 	[PermitNum] [varchar](100) NOT NULL,
-	[InspType] [varchar](20) NULL,
-	[InspTypeMapped] [varchar](20) NULL,
+	[InspType] [varchar](50) NULL,
+	[InspTypeMapped] [varchar](50) NULL,
 	[Result] [varchar](100) NULL,
 	[ResultMapped] [varchar](100) NULL,
 	[ScheduledDate] [datetime2](7) NULL,
