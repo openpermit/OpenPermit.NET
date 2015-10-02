@@ -47,6 +47,7 @@ namespace OpenPermit
         public string ProposedUse { get; set; }
         public int AddedSqFt { get; set; }
         public int RemovedSqFt { get; set; }
+        public string MasterPermitNum { get; set; }
         public DateTime? ExpiresDate { get; set; }
         public DateTime? COIssuedDate { get; set; }
         public DateTime? HoldDate { get; set; }

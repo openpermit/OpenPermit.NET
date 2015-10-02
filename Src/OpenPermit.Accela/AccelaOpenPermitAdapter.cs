@@ -30,17 +30,7 @@ namespace OpenPermit.Accela
         public string ZipCode { get; set; }
     }
 
-    public struct StatusMapping
-    {
-        public string Status { get; set; }
-        public string StatusMapped { get; set; }
-    }
-
-    public class AccelaConfig
-    {
-        public string[] Modules { get; set; }
-        public List<StatusMapping> Status { get; set; }
-    }
+    
 
     public class AccelaOpenPermitAdapter : IOpenPermitAdapter
     {
@@ -60,7 +50,7 @@ namespace OpenPermit.Accela
 
         private Dictionary<string, List<string>> lists = new Dictionary<string, List<string>>();
 
-        private AccelaConfig config;
+        private AgencyConfiguration config;
         private NameValueCollection connection;
 
         public AccelaOpenPermitAdapter(OpenPermitContext context)
@@ -74,7 +64,7 @@ namespace OpenPermit.Accela
 
             this.context = context;
             // TODO see if it makes sense to provide a default config, otherwise make sure the AccelaConfig is provided
-            this.config = JsonConvert.DeserializeObject<AccelaConfig>(context.Agency.Configuration);
+            this.config = JsonConvert.DeserializeObject<AgencyConfiguration>(context.Agency.Configuration);
                 
             // TODO using agency app only, should we change this to citizen app?
             recApi = new RecordHandler(agencyAppId, agencyAppSecret, ApplicationType.Agency, string.Empty, appConfig);
@@ -197,21 +187,15 @@ namespace OpenPermit.Accela
             if (record.status != null)
             {
                 permit.StatusCurrent = record.status.text;
-                var statusConfig = config.Status;
-                //TODO what happens if there is not configuration for status?
-                var mapping = statusConfig.SingleOrDefault<StatusMapping>(m => m.Status == record.status.text);
-                if (mapping.Status != null)
+                
+                if (config.Status != null)
                 {
-                    permit.StatusCurrentMapped = (mapping.StatusMapped != null) ? mapping.StatusMapped : record.status.text;
+                    var mapping = config.Status.SingleOrDefault<StatusMapping>(m => m.Status == record.status.text);
+                    if (mapping.Status != null)
+                    {
+                        permit.StatusCurrentMapped = mapping.StatusMapped;
+                    }
                 }
-                else
-                {
-                    permit.StatusCurrentMapped = record.status.text;
-                }
-            }
-            else
-            {
-                permit.StatusCurrentMapped = "Draft";
             }
 
             if (record.addresses != null)
@@ -310,13 +294,77 @@ namespace OpenPermit.Accela
 
         public Permit GetPermit(string permitNumber)
         {
+            if (permitNumber == null)
+            {
+                throw new ArgumentNullException("Permit number is required.");
+            }
+
             Record record = GetRecord(permitNumber);
             return ToPermit(record);
         }
 
+        private List<PermitStatus> GetPermitTimelineInternal(string permitNumber, string internalId)
+        {
+            var timeline = new List<PermitStatus>();
+            List<WorkflowTask> tasks = recApi.GetWorkflowTasks(internalId, BackgroundToken);
+
+            if (tasks != null)
+            {
+                foreach (var task in tasks)
+                {
+                    if (task.isActive == "Y" || task.isCompleted == "Y")
+                    {
+                        var status = new PermitStatus
+                        {
+                            PermitNum = permitNumber,
+                            StatusPrevious = task.description
+                        };
+
+                        if (task.status != null)
+                        {
+                            status.Comments = task.status.text;
+                        }
+
+                        if (task.statusDate != null)
+                        {
+                            status.StatusPreviousDate = DateTime.Parse(task.statusDate);
+                        }
+
+                        var mapping = config.Timeline.FirstOrDefault<TimelineMapping>(t => t.StatusPrevious == task.description);
+                        status.StatusPreviousMapped = mapping.StatusPreviousMapped;
+
+                        timeline.Add(status);
+                    }
+                }
+            }
+            else
+            {
+                var status = new PermitStatus
+                {
+                    PermitNum = permitNumber,
+                    StatusPrevious = "Application Submitted"
+                };
+            }
+
+            return timeline;
+        }
+
         public List<PermitStatus> GetPermitTimeline(string permitNumber)
         {
-            throw new NotImplementedException();
+            if (permitNumber == null)
+            {
+                throw new ArgumentNullException("Permit number is required.");
+            }
+
+            Record record = GetRecord(permitNumber);
+            if (record.status != null)
+            {
+                return GetPermitTimelineInternal(permitNumber, record.id);
+            }
+            else
+            {
+                return new List<PermitStatus>();
+            }
         }
 
         #endregion
@@ -324,24 +372,23 @@ namespace OpenPermit.Accela
         #region Inspections
         public List<Inspection> GetInspections(string permitNumber)
         {
+            if (permitNumber == null)
+            {
+                throw new ArgumentNullException("Permit number is required.");
+            }
+            
             string id = GetRecordIdByNumber(permitNumber);
             return GetPermitInspectionsInternal(id);
         }
 
         private Inspection ToInspection(AccelaSDKModels.Inspection inspectionRecord)
         {
-            // TODO read status to resultype mapping from backend config to map to open permit
-            // Mapping can be created from /v4/settings/inspections/statuses ?
-            return new Inspection
+            var inspection = new Inspection
             {
                 Id = inspectionRecord.id.ToString(),
                 Inspector = inspectionRecord.inspectorFullName,
                 Result = inspectionRecord.status.text,
-                //TODO do the mapping from config
-                //ResultMapped = from config
                 InspType = inspectionRecord.type.text,
-                //TODO do the mapping from config
-                //InspTypeMapped = from config
                 PermitNum = inspectionRecord.recordId.customId,
                 // TODO verify this
                 ScheduledDate = inspectionRecord.scheduledDate,
@@ -351,6 +398,20 @@ namespace OpenPermit.Accela
                 InspectedDate = inspectionRecord.completedDate,
 
             };
+
+            if(config.InspectionType != null)
+            {
+                var mapping = config.InspectionType.SingleOrDefault<InspectionTypeMapping>(m => m.InspectionType == inspection.InspType);
+                inspection.InspTypeMapped = mapping.InspectionTypeMapped;
+            }
+
+            if (config.InspectionResult != null)
+            {
+                var mapping = config.InspectionResult.SingleOrDefault<InspectionResultMapping>(m => m.Result == inspection.Result);
+                inspection.ResultMapped = mapping.ResultMapped;
+            }
+
+            return inspection;
         }
 
         private List<Inspection> GetPermitInspectionsInternal(string internalId)
