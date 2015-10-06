@@ -8,7 +8,7 @@ You can see the latest release live featuring: [Miami-Dade County, FL](http://md
 
 ## Bugs and feature requests
 
-Have a bug or a feature request? Please first search for existing and closed issues. If your problem or idea is not addressed yet, [please open a new issue](https://github.com/openpermit/openpermit.github.io/issues/).
+Have a bug or a feature request? Please first search for existing and closed issues. If your problem or idea is not addressed yet, [please open a new issue](https://github.com/openpermit/OpenPermit.NET/issues).
 
 ## Documentation
 
