@@ -31,4 +31,4 @@ Get updates on OpenPermit development and chat with the project maintainers and 
 
 ## Copyright and license
 
-Code and documentation copyright 2015 OpenPermit Foundation. The specification is released under [Creative Commons](http://creativecommons.org/licenses/by/3.0/).
+Copyright 2015 OpenPermit Foundation, Inc. This code is released under [MIT License](https://github.com/openpermit/OpenPermit.NET/blob/master/LICENSE).
