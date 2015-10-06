@@ -16,6 +16,10 @@ You can see the latest release live featuring: [Miami-Dade County, FL](http://md
 
 Have a bug or a feature request? Please first search for existing and closed issues. If your problem or idea is not addressed yet, [please open a new issue](https://github.com/openpermit/OpenPermit.NET/issues).
 
+## Contributing
+
+Please read through our [contributing guidelines](https://github.com/twbs/bootstrap/blob/master/CONTRIBUTING.md). Included are directions for opening issues, coding standards, and notes on development.
+
 ## Documentation
 
 The official OpenPermit API specification and documentation is publicly hosted on GitHub Pages at <http://www.openpermit.org/docs/index.html>.
