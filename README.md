@@ -6,6 +6,12 @@ This is a reference implementation for the [OpenPermit Specification](http://www
 
 You can see the latest release live featuring: [Miami-Dade County, FL](http://mdc.openpermit.org)
 
+## Supported systems of record and data sources
+
+- Accela Contruct API
+- Socrata Data Portal
+- Microsoft SQL Server RDBMS
+
 ## Bugs and feature requests
 
 Have a bug or a feature request? Please first search for existing and closed issues. If your problem or idea is not addressed yet, [please open a new issue](https://github.com/openpermit/OpenPermit.NET/issues).
