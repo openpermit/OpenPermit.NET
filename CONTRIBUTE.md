@@ -157,7 +157,7 @@ included in the project:
     with a clear title and description against the `master` branch.
     
 
-For a sample step by step follow our [detailed our detailed collaboration workflow](https://github.com/openpermit/openpermit.github.io/wiki/Collaboration-Workflow)
+For a sample step by step follow our [detailed collaboration workflow](https://github.com/openpermit/openpermit.github.io/wiki/Collaboration-Workflow)
 
 **IMPORTANT**: By submitting a patch, you agree to allow the project owners to
 license your work under the terms of the [MIT License](LICENSE) (if it
