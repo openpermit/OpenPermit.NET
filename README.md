@@ -9,7 +9,7 @@ You can see the latest release live featuring: [Miami-Dade County, FL](http://md
 ## Supported systems of record and data sources
 
 - [Accela Construct API](https://github.com/openpermit/OpenPermit.NET/tree/master/Src/OpenPermit.Accela)
-- Socrata Data Portal
+- Socrata Open Data Portal
 - [Microsoft SQL Server RDBMS](https://github.com/openpermit/OpenPermit.NET/tree/master/Src/OpenPermit.SQL)
 
 ## Bugs and feature requests
