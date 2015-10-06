@@ -31,4 +31,4 @@ Get updates on OpenPermit development and chat with the project maintainers and 
 
 ## Copyright and license
 
-Copyright 2015 OpenPermit Foundation, Inc. This code is released under [MIT License](https://github.com/openpermit/OpenPermit.NET/blob/master/LICENSE).
+Copyright 2015 OpenPermit Foundation, Inc. This code is released under the [MIT License](https://github.com/openpermit/OpenPermit.NET/blob/master/LICENSE).
