@@ -1,6 +1,7 @@
 
 CREATE TABLE [dbo].[Permit](
 	[PermitNum] [varchar](100) NOT NULL,
+	[MasterPermitNum] [varchar](100) NULL,
 	[Location] [geography] NULL,
 	[Description] [varchar](100) NULL,
 	[IssuedDate] [datetime2](7) NULL,
