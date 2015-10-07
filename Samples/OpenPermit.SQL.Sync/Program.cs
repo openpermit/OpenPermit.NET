@@ -33,15 +33,58 @@ namespace OpenPermit.MDC.Sync
             //Cleanup DB to bring new points, this will change once we do overlay new socrata file
             db.Execute("DELETE FROM Permit");
             db.Execute("DELETE FROM Inspection");
+            db.Execute("DELETE FROM PermitStatus");
             Console.WriteLine(DateTime.Now);
             Console.WriteLine("Inserting Data into DB");
             foreach (Permit permit in permits)
             {
                 if (permit.PermitNum != null)
                 {
-                    db.Insert("Permit", "PermitNum", false, permit);
                     Console.WriteLine("Getting Inspections for Permit: " + permit.PermitNum);
                     List<Inspection> inspections = getMDCInspections(permit.PermitNum);
+                    DateTime? lastApprovedInspectionDate = permit.StatusDate;
+                    if (permit.AppliedDate != null)
+                    {
+                        PermitStatus status = new PermitStatus();
+                        status.PermitNum = permit.PermitNum;
+                        status.StatusPrevious = "APPLIED";
+                        status.StatusPreviousDate = permit.AppliedDate;
+
+                        db.Insert("PermitStatus", "id", true, status);
+                        permit.StatusCurrent = status.StatusPrevious;
+                        permit.StatusDate = status.StatusPreviousDate;
+                    }
+
+                    if (permit.IssuedDate != null)
+                    {
+                        PermitStatus status = new PermitStatus();
+                        status.PermitNum = permit.PermitNum;
+                        status.StatusPrevious = "ISSUED";
+                        status.StatusPreviousDate = permit.IssuedDate;
+
+                        db.Insert("PermitStatus", "id", true, status);
+
+                        permit.StatusCurrent = status.StatusPrevious;
+                        permit.StatusDate = status.StatusPreviousDate;
+                    }
+
+                    if (permit.MasterPermitNum == "0" && isMasterPermitClosed(inspections))
+                    {
+                        PermitStatus status = new PermitStatus();
+                        status.PermitNum = permit.PermitNum;
+                        status.StatusPrevious = "CLOSED";
+                        status.StatusPreviousDate = lastApprovedInspectionDate;
+
+                        db.Insert("PermitStatus", "id", true, status);
+
+                        permit.StatusCurrent = status.StatusPrevious;
+                        permit.StatusDate = status.StatusPreviousDate;
+                        permit.CompletedDate = status.StatusPreviousDate;
+
+                    }
+
+                    db.Insert("Permit", "PermitNum", false, permit);
+
                     Console.WriteLine(DateTime.Now);
                     foreach (Inspection inspection in inspections)
                     {
@@ -64,11 +107,22 @@ namespace OpenPermit.MDC.Sync
 
         }
 
+        private static bool isMasterPermitClosed( List<Inspection> inspections )
+        {
+            foreach (Inspection insp in inspections)
+            {
+                if (insp.InspType == "FINAL" && insp.Result == "APPROVED")
+                    return true;
+            }
+
+            return false;
+        }
+
         private static List<Inspection> getMDCInspections( string relURL, List<Inspection> current )
         {
             HtmlDocument doc = new HtmlDocument();
 
-            string addressUrl = ConfigurationManager.AppSettings.Get("OP.MDC.Inspection.Url");
+            string addressUrl = ConfigurationManager.AppSettings.Get("OP.MDC.Web.Url");
             addressUrl = addressUrl + relURL;
 
             string content = DoGet(addressUrl);
@@ -229,29 +283,39 @@ namespace OpenPermit.MDC.Sync
             foreach (dynamic dynPermit in dynPermits)
             {
                 Permit permit = new Permit();
-                permit.PermitNum = dynPermit.permitnumber;
-                permit.PermitType = dynPermit.permittype;
+                permit.PermitNum = dynPermit.permit_number;
+                permit.MasterPermitNum = dynPermit.master_permit_number;
+                permit.AppliedDate =  Convert.ToDateTime(dynPermit.application_date);
+                permit.IssuedDate = Convert.ToDateTime(dynPermit.permit_issued_date);
 
-                if (dynPermit.jobsite != null)
+                if (dynPermit.last_approved_insp_date != null)
                 {
-                    string addressJson = dynPermit.jobsite.human_address;
+                    permit.StatusDate = Convert.ToDateTime(dynPermit.last_approved_insp_date);
+                }
+                permit.Jurisdiction = "12086";
+                permit.Publisher = "Miami-Dade County, FL";
+                permit.PermitType = dynPermit.permit_type;
+
+                if (dynPermit.location != null)
+                {
+                    string addressJson = dynPermit.location.human_address;
                     JobAddress jobAdd = JsonConvert.DeserializeObject<JobAddress>(addressJson);
                     permit.OriginalAddress1 = jobAdd.address;
                     permit.OriginalCity = jobAdd.city;
                     permit.OriginalState = jobAdd.state;
                     permit.OriginalZip = jobAdd.zip;
-                    if (dynPermit.jobsite.latitude != null)
+                    if (dynPermit.location.latitude != null)
                     {
-                        permit.Latitude = dynPermit.jobsite.latitude;
+                        permit.Latitude = dynPermit.location.latitude;
                         if (permit.Latitude < -90)
                             permit.Latitude = -90;
                         else if (permit.Latitude > 90)
                             permit.Latitude = 90;
                     }
 
-                    if (dynPermit.jobsite.longitude != null)
+                    if (dynPermit.location.longitude != null)
                     {
-                        permit.Longitude = dynPermit.jobsite.longitude;
+                        permit.Longitude = dynPermit.location.longitude;
                         if (permit.Longitude < -180)
                             permit.Longitude = -180;
                         else if (permit.Longitude > 180)
@@ -259,26 +323,23 @@ namespace OpenPermit.MDC.Sync
                     }
                 }
 
-                if (dynPermit.contractoraddress != null)
-                {
-                    string addressJson = dynPermit.contractoraddress.human_address;
-                    JobAddress contAdd = JsonConvert.DeserializeObject<JobAddress>(addressJson);
-                    permit.ContractorAddress1 = contAdd.address;
-                    permit.ContractorCity = contAdd.city;
-                    permit.ContractorState = contAdd.state;
-                    permit.ContractorZip = contAdd.zip;
-                }
 
-                permit.ContractorFullName = dynPermit.contractorname;
-                permit.ContractorPhone = dynPermit.contractorphone;
-                if (dynPermit.squarefeet != null)
-                    permit.TotalSqFt = dynPermit.squarefeet;
-                permit.Description = dynPermit.proposedusedescription;
-                if (dynPermit.estimatedvalue != null)
-                    permit.EstProjectCost = dynPermit.estimatedvalue;
-                permit.PermitTypeDesc = dynPermit.typecodedescription;
-                if (dynPermit.units != null)
-                    permit.HousingUnits = dynPermit.units;
+                permit.ContractorAddress1 = dynPermit.contractor_address;
+                permit.ContractorCity = dynPermit.contractor_city;
+                permit.ContractorState = dynPermit.contractor_state;
+                permit.ContractorZip = dynPermit.contractor_zip;
+
+                permit.ContractorFullName = dynPermit.contractor_name;
+                permit.ContractorPhone = dynPermit.contractor_phone;
+                permit.ContractorLicNum = dynPermit.contractor_number;
+                if (dynPermit.square_footage != null)
+                    permit.TotalSqFt = dynPermit.square_footage;
+                permit.Description = dynPermit.detail_description_comments;
+                if (dynPermit.estimated_value != null)
+                    permit.EstProjectCost = dynPermit.estimated_value;
+                permit.PermitTypeDesc = dynPermit.application_type_description;
+                if (dynPermit.structure_units != null)
+                    permit.HousingUnits = dynPermit.structure_units;
 
                 permits.Add(permit);
                 
