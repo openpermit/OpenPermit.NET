@@ -31,11 +31,20 @@ namespace OpenPermit
         public double MaxY { get; set; }
     }
 
+    public enum FieldChoices
+    {
+        Geo = 1,
+        Recommended = 2,
+        Optional = 4,
+        All = Geo | Recommended | Optional
+    }
+
     public struct PermitFilter
     {
         public string PermitNumber { get; set; }
         public string Address { get; set; }
-        public Box BoundingBox { get; set; } 
+        public Box BoundingBox { get; set; }
+        public FieldChoices Fields { get; set; }
     }
 
     public struct PermitType
