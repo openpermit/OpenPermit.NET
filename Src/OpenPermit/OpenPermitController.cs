@@ -30,26 +30,62 @@ namespace OpenPermit
     {
         public IOpenPermitAdapter Adapter { get; set; }
 
-        private FeatureCollection ToGeoJson(List<Permit> permits)
+        private PushStreamContent ToGeoJsonStream(List<Permit> permits, FieldChoices choice)
         {
-            var features = new List<Feature>(permits.Count);
-
-            foreach(var permit in permits)
-            {
-                var point = new GeoJSON.Net.Geometry.Point(new GeoJSON.Net.Geometry.GeographicPosition(permit.Latitude, permit.Longitude));
-                var properties = new Dictionary<string, object>();
-                foreach(var property in permit.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public))
+            PushStreamContent geoJsonContent = new PushStreamContent(
+                (stream, content, context) =>
                 {
-                    var value = property.GetValue(permit, null); 
-                    if(value != null)
+                    TextWriter writer = new StreamWriter(stream);
+                    JsonWriter jsonWriter = new JsonTextWriter(writer);
+                    jsonWriter.Formatting = Formatting.None;
+                    jsonWriter.WriteStartObject();
+                    jsonWriter.WritePropertyName("type");
+                    jsonWriter.WriteValue("FeatureCollection");
+                    jsonWriter.WritePropertyName("features");
+                    jsonWriter.WriteStartArray();
+                    
+                    foreach (var permit in permits)
                     {
-                        properties.Add(property.Name, value);
-                    }
-                }
-                features.Add(new Feature(point, properties, permit.PermitNum));
-            }
+                        jsonWriter.WriteStartObject();
+                        jsonWriter.WritePropertyName("type");
+                        jsonWriter.WriteValue("Feature");
+                        jsonWriter.WritePropertyName("id");
+                        jsonWriter.WriteValue(permit.PermitNum);
+                        jsonWriter.WritePropertyName("geometry");
+                        jsonWriter.WriteStartObject();
+                        jsonWriter.WritePropertyName("type");
+                        jsonWriter.WriteValue("Point");
+                        jsonWriter.WritePropertyName("coordinates");
+                        jsonWriter.WriteStartArray();
+                        jsonWriter.WriteValue(permit.Longitude);
+                        jsonWriter.WriteValue(permit.Latitude);
+                        jsonWriter.WriteEndArray();
+                        jsonWriter.WriteEndObject();
 
-            return new FeatureCollection(features);
+                        if((choice & FieldChoices.Recommended) > 0)
+                        {
+                            // TODO Serialize required fields
+                        }
+
+                        if ((choice & FieldChoices.Optional) > 0)
+                        {
+                            // TODO Serialize optional fields
+                        }
+
+                        if ((choice & FieldChoices.All) > 0)
+                        {
+                            // TODO Serialize all
+                        }
+
+                        jsonWriter.WriteEndObject();
+                    }
+                    jsonWriter.WriteEndArray();
+                    jsonWriter.WriteEndObject();
+                    jsonWriter.Flush();
+                    jsonWriter.Close();
+                });
+
+            return geoJsonContent;
         }
 
         /// <summary>
@@ -68,7 +104,7 @@ namespace OpenPermit
         ///     Note: This endpoint GeoJSON reponses.
         /// </returns>
         [Route]
-        public HttpResponseMessage GetPermits(string number = null, string address = null, string bbox = null)
+        public HttpResponseMessage GetPermits(string number = null, string address = null, string bbox = null, string fields = "all")
         {
             var filter = new PermitFilter
             {
@@ -111,6 +147,23 @@ namespace OpenPermit
                     MaxY = yMax
                 };
             }
+
+            switch(fields.ToLower())
+            {
+                case "geo":
+                    filter.Fields = FieldChoices.Geo;
+                    break;
+                case "required":
+                    filter.Fields = FieldChoices.Recommended;
+                    break;
+                case "optional":
+                    filter.Fields = FieldChoices.Optional;
+                    break;
+                default:
+                    filter.Fields = FieldChoices.All;
+                    break;
+            }
+
             List<Permit> permits = Adapter.SearchPermits(filter);
 
             if (permits != null)
@@ -119,9 +172,8 @@ namespace OpenPermit
                 IEnumerable<string> acceptHeader;
                 if(Request.Headers.TryGetValues("Accept", out acceptHeader) && acceptHeader.FirstOrDefault() == "application/vnd.geo+json")
                 {
-                    //var response = Request.CreateResponse<FeatureCollection>(ToGeoJson(permits));
                     var response = Request.CreateResponse(HttpStatusCode.OK);
-                    response.Content = new StringContent(JsonConvert.SerializeObject(ToGeoJson(permits)));
+                    response.Content = ToGeoJsonStream(permits, filter.Fields);
                     response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/vnd.geo+json");
                     return response;
                 }
