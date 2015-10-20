@@ -39,11 +39,22 @@ namespace OpenPermit
         All = Geo | Recommended | Optional
     }
 
+    public enum TypeChoices
+    {
+        Master,
+        Building,
+        Electrical,
+        Plumbing,
+        Mechanical,
+        Fire
+    }
+
     public struct PermitFilter
     {
         public string PermitNumber { get; set; }
         public string Address { get; set; }
         public Box BoundingBox { get; set; }
+        public List<TypeChoices> Types { get; set; }
         public FieldChoices Fields { get; set; }
     }
 
