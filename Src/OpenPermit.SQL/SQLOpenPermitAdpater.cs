@@ -128,12 +128,84 @@ namespace OpenPermit.SQL
                 string wkt = BoundingBoxToWkt(filter.BoundingBox);
                 using (var db = new Database(connectionString, provider))
                 {
-                    return db.Fetch<Permit>("SELECT * FROM Permit " +
-                        "WHERE Location.Filter(geography::STGeomFromText('" + wkt + "', 4326))=1");
+                    string fields = "*";
+                    string conditions = "";
+                    string queryBase = "SELECT {0} FROM Permit " +
+                        "WHERE {1} Location.Filter(geography::STGeomFromText('" + wkt + "', 4326))=1";
+
+                    if (filter.Fields != null)
+                    {
+                        switch (filter.Fields)
+                        {
+                            case FieldChoices.Geo:
+                                fields = "PermitNum,Latitude,Longitude";
+                                break;
+                            case FieldChoices.Recommended:
+                                fields = "PermitNum,MasterPermitNum,Location,Description,IssuedDate,CompletedDate" +
+                                    ",StatusCurrent,OriginalAddress1,OriginalAddress2,OriginalCity,OriginalState" +
+                                    ",OriginalZip,Jurisdiction,PermitClass,PermitClassMapped,StatusCurrentMapped" +
+                                    ",AppliedDate,WorkClass,WorkClassMapped,PermitType,PermitTypeMapped,PermitTypeDesc" +
+                                    ",StatusDate,TotalSqFt,Link,Latitude,Longitude,EstProjectCost,HousingUnits" +
+                                    ",PIN,ContractorCompanyName,ContractorTrade,ContractorTradeMapped,ContractorLicNum" +
+                                    ",ContractorStateLic";
+                                break;
+                            case FieldChoices.Optional:
+                                fields = "PermitNum,MasterPermitNum,Location,Description,IssuedDate,CompletedDate" +
+                                    ",StatusCurrent,OriginalAddress1,OriginalAddress2,OriginalCity,OriginalState" +
+                                    ",OriginalZip,Jurisdiction,PermitClass,PermitClassMapped,StatusCurrentMapped" +
+                                    ",AppliedDate,WorkClass,WorkClassMapped,PermitType,PermitTypeMapped,PermitTypeDesc" +
+                                    ",StatusDate,TotalSqFt,Link,Latitude,Longitude,EstProjectCost,HousingUnits" +
+                                    ",PIN,ContractorCompanyName,ContractorTrade,ContractorTradeMapped,ContractorLicNum" +
+                                    ",ContractorStateLic ,ProposedUse,AddedSqFt,RemovedSqFt,ExpiresDate,COIssuedDate" +
+                                    ",HoldDate,VoidDate,ProjectName,ProjectId,TotalFinishedSqFt,TotalUnfinishedSqFt" +
+                                    ",TotalHeatedSqFt,TotalUnheatedSqFt,TotalAccSqFt,TotalSprinkledSqFt,ExtraFields" +
+                                    ",Publisher,Fee,ContractorFullName,ContractorCompanyDesc,ContractorPhone" +
+                                    ",ContractorAddress1,ContractorAddress2,ContractorCity,ContractorState,ContractorZip" +
+                                    ",ContractorEmail";
+                                break;
+                        }
+                    }
+
+                    if (filter.Types != null)
+                    {
+                        foreach (TypeChoices type in filter.Types)
+                        {
+                            switch (type)
+                            {
+                                case TypeChoices.Master:
+                                    conditions += "MasterPermitNum = '0' and ";
+                                    break;
+                                case TypeChoices.Electrical:
+                                    conditions += "PermitType in ('ELEC', 'MELE') and ";
+                                    break;
+                                case TypeChoices.Plumbing:
+                                    conditions += "PermitType in ('PLUM', 'MPLU') and ";
+                                    break;
+                                case TypeChoices.Mechanical:
+                                    conditions += "PermitType in ('MECH', 'MMEC') and ";
+                                    break;
+                                case TypeChoices.Fire:
+                                    conditions += "PermitType in ('FIRE', 'MFIR') and ";
+                                    break;
+                                case TypeChoices.Building:
+                                    conditions += "PermitType in ('BLDG', 'MBLD') and ";
+                                    break;
+                            }
+                        }
+                    }
+
+                    return db.Fetch<Permit>(String.Format(queryBase, fields, conditions));
                 }
             }
+            else
+            {
+                //No Filter means get all permits
+                using (var db = new Database(connectionString, provider))
+                {
+                    return db.Fetch<Permit>("SELECT * FROM Permit");
+                }
 
-            throw new ArgumentException("Bad Permit Filter Format. Either Permit Number, Address or BoundingBox must be entered");
+            }
         }
 
         public Permit GetPermit(string permitNumber)

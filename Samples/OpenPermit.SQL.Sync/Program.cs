@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using OpenPermit.SQL;
 
 namespace OpenPermit.MDC.Sync
 {
@@ -25,79 +26,90 @@ namespace OpenPermit.MDC.Sync
         static void Main(string[] args)
         {
             Console.WriteLine(DateTime.Now);
-            Console.WriteLine("Bringin data from Socrata");
-            List<Permit> permits = getSocrataPermits();
+            Console.WriteLine("Bringing data from Socrata");
+            var permits = getPermitsToSync();
             Console.WriteLine(DateTime.Now);
-            Console.WriteLine("Cleaning Data from DB");
+       
             Database db = new Database("openpermit");
-            //Cleanup DB to bring new points, this will change once we do overlay new socrata file
-            db.Execute("DELETE FROM Permit");
-            db.Execute("DELETE FROM Inspection");
-            db.Execute("DELETE FROM PermitStatus");
+            
             Console.WriteLine(DateTime.Now);
             Console.WriteLine("Inserting Data into DB");
-            foreach (Permit permit in permits)
+            foreach (Permit permit in permits.Item1)
             {
-                if (permit.PermitNum != null)
-                {
-                    Console.WriteLine("Getting Inspections for Permit: " + permit.PermitNum);
-                    List<Inspection> inspections = getMDCInspections(permit.PermitNum);
-                    DateTime? lastApprovedInspectionDate = permit.StatusDate;
-                    if (permit.AppliedDate != null)
-                    {
-                        PermitStatus status = new PermitStatus();
-                        status.PermitNum = permit.PermitNum;
-                        status.StatusPrevious = "APPLIED";
-                        status.StatusPreviousDate = permit.AppliedDate;
-
-                        db.Insert("PermitStatus", "id", true, status);
-                        permit.StatusCurrent = status.StatusPrevious;
-                        permit.StatusDate = status.StatusPreviousDate;
-                    }
-
-                    if (permit.IssuedDate != null)
-                    {
-                        PermitStatus status = new PermitStatus();
-                        status.PermitNum = permit.PermitNum;
-                        status.StatusPrevious = "ISSUED";
-                        status.StatusPreviousDate = permit.IssuedDate;
-
-                        db.Insert("PermitStatus", "id", true, status);
-
-                        permit.StatusCurrent = status.StatusPrevious;
-                        permit.StatusDate = status.StatusPreviousDate;
-                    }
-
-                    if (permit.MasterPermitNum == "0" && isMasterPermitClosed(inspections))
-                    {
-                        PermitStatus status = new PermitStatus();
-                        status.PermitNum = permit.PermitNum;
-                        status.StatusPrevious = "CLOSED";
-                        status.StatusPreviousDate = lastApprovedInspectionDate;
-
-                        db.Insert("PermitStatus", "id", true, status);
-
-                        permit.StatusCurrent = status.StatusPrevious;
-                        permit.StatusDate = status.StatusPreviousDate;
-                        permit.CompletedDate = status.StatusPreviousDate;
-
-                    }
-
-                    db.Insert("Permit", "PermitNum", false, permit);
-
-                    Console.WriteLine(DateTime.Now);
-                    foreach (Inspection inspection in inspections)
-                    {
-                        db.Insert("Inspection", "UniqueId", true, inspection);
-                    }
-                }
+                processMDCInpsections(permit, db);
+                db.Insert("Permit", "PermitNum", false, permit);
             }
+
+            foreach (Permit permit in permits.Item2)
+            {
+                processMDCInpsections(permit, db);
+                db.Update("Permit", "PermitNum", permit);
+            }
+
             Console.WriteLine(DateTime.Now);
             Console.WriteLine("Populating Geography Field");
             db.Execute("UPDATE Permit SET Location=geography::Point(Latitude, Longitude, 4326)");
             Console.WriteLine(DateTime.Now);
             Console.WriteLine("Done");
 
+        }
+
+        private static void processMDCInpsections(Permit permit, Database db)
+        {
+            //Cleanup DB to bring new points for permit
+            Console.WriteLine("Cleaning Data from DB for Permit: " + permit.PermitNum);
+            db.Execute(String.Format("DELETE FROM Inspection WHERE PermitNum = '{0}'", permit.PermitNum));
+            db.Execute(String.Format("DELETE FROM PermitStatus WHERE PermitNum = '{0}'", permit.PermitNum));
+                    
+            Console.WriteLine("Getting Inspections for Permit: " + permit.PermitNum);
+            List<Inspection> inspections = getMDCInspections(permit.PermitNum);
+            DateTime? lastApprovedInspectionDate = permit.StatusDate;
+            if (permit.AppliedDate != null)
+            {
+                PermitStatus status = new PermitStatus();
+                status.PermitNum = permit.PermitNum;
+                status.StatusPrevious = "APPLIED";
+                status.StatusPreviousDate = permit.AppliedDate;
+
+                db.Insert("PermitStatus", "id", true, status);
+
+                permit.StatusCurrent = status.StatusPrevious;
+                permit.StatusDate = status.StatusPreviousDate;
+            }
+
+            if (permit.IssuedDate != null)
+            {
+                PermitStatus status = new PermitStatus();
+                status.PermitNum = permit.PermitNum;
+                status.StatusPrevious = "ISSUED";
+                status.StatusPreviousDate = permit.IssuedDate;
+
+                db.Insert("PermitStatus", "id", true, status);
+
+                permit.StatusCurrent = status.StatusPrevious;
+                permit.StatusDate = status.StatusPreviousDate;
+            }
+
+            if (isPermitClosed(inspections))
+            {
+                PermitStatus status = new PermitStatus();
+                status.PermitNum = permit.PermitNum;
+                status.StatusPrevious = "CLOSED";
+                status.StatusPreviousDate = lastApprovedInspectionDate;
+
+                db.Insert("PermitStatus", "id", true, status);
+
+                permit.StatusCurrent = status.StatusPrevious;
+                permit.StatusDate = status.StatusPreviousDate;
+                permit.CompletedDate = status.StatusPreviousDate;
+
+            }
+
+            Console.WriteLine(DateTime.Now);
+            foreach (Inspection inspection in inspections)
+            {
+                db.Insert("Inspection", "UniqueId", true, inspection);
+            }
         }
 
         private static List<Inspection> getMDCInspections( string permitNum )
@@ -107,11 +119,24 @@ namespace OpenPermit.MDC.Sync
 
         }
 
-        private static bool isMasterPermitClosed( List<Inspection> inspections )
+        private static DateTime? getFinalInspectionDate(List<Inspection> inspections)
         {
             foreach (Inspection insp in inspections)
             {
-                if (insp.InspType == "FINAL" && insp.Result == "APPROVED")
+                if (insp.InspType.Contains("FINAL") && insp.Result == "APPROVED")
+                    return insp.InspectedDate;
+            }
+
+            return null;
+
+        }
+
+
+        private static bool isPermitClosed(List<Inspection> inspections)
+        {
+            foreach (Inspection insp in inspections)
+            {
+                if (insp.InspType.Contains("FINAL") && insp.Result == "APPROVED")
                     return true;
             }
 
@@ -228,10 +253,53 @@ namespace OpenPermit.MDC.Sync
 
         }
 
+        private static Tuple<List<Permit>, List<Permit>> getPermitsToSync()
+        {
+            HashSet<string> closedPermits = new HashSet<string>();
+            HashSet<string> openedPermits = new HashSet<string>();
+
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+
+            List<Permit> knownPermits = adapter.SearchPermits(new PermitFilter());
+
+            foreach (Permit permit in knownPermits)
+            {
+                if (permit.StatusCurrent == "CLOSED")
+                {
+                    closedPermits.Add(permit.PermitNum);
+                }
+                else
+                {
+                    openedPermits.Add(permit.PermitNum);
+                }
+            }
+
+            List<Permit> mdcPermits = getSocrataPermits();
+
+            List<Permit> existingPermits = new List<Permit>();
+            List<Permit> newPermits = new List<Permit>();
+
+            foreach (Permit permit in mdcPermits)
+            {
+                //Permit is not closed
+                if (permit.PermitNum != null && !closedPermits.Contains(permit.PermitNum))
+                {
+                    if (openedPermits.Contains(permit.PermitNum))
+                        existingPermits.Add(permit);
+                    else
+                        newPermits.Add(permit);
+                }
+
+            }
+
+            return new Tuple<List<Permit>, List<Permit>>(newPermits, existingPermits);
+
+        }
+
         private static List<Permit> getSocrataPermits()
         {
             int offset = 0;
-            int limit = 5000;
+            int limit = 10000;
             int pageSize = 0;
             List<Permit> result = new List<Permit>();
             do
@@ -323,7 +391,7 @@ namespace OpenPermit.MDC.Sync
                     }
                 }
 
-
+                permit.ProjectId = dynPermit.process_number;
                 permit.ContractorAddress1 = dynPermit.contractor_address;
                 permit.ContractorCity = dynPermit.contractor_city;
                 permit.ContractorState = dynPermit.contractor_state;
