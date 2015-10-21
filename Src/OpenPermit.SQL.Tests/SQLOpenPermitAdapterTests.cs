@@ -47,6 +47,124 @@ namespace OpenPermit.SQL.Tests
             Assert.AreEqual(permits.Count, 1);
         }
 
+        private List<Permit> GetBoxPermits(List<TypeChoices> types, FieldChoices fields = FieldChoices.All)
+        {
+            PermitFilter filter = new PermitFilter();
+            Box box = new Box();
+
+            box.MinX = -81;
+            box.MaxX = -80;
+            box.MinY = 25;
+            box.MaxY = 26;
+            filter.BoundingBox = box;
+            filter.Types = types;
+            filter.Fields = fields;
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            List<Permit> permits = adapter.SearchPermits(filter);
+
+            return permits;
+        }
+
+        [TestMethod]
+        public void TestMatchByBox()
+        {
+
+            List<Permit> permits = this.GetBoxPermits(null);
+            Assert.AreEqual(30, permits.Count);            
+        }
+
+        [TestMethod]
+        public void TestMatchByBoxAndGeo()
+        {
+            List<Permit> permits = this.GetBoxPermits(null, FieldChoices.Geo);
+            Assert.AreEqual(30, permits.Count);
+            Assert.IsNull(permits[0].Description);
+        }
+
+        [TestMethod]
+        public void TestMatchByBoxAndRecommended()
+        {
+            List<Permit> permits = this.GetBoxPermits(null, FieldChoices.Recommended);
+            Assert.AreEqual(30, permits.Count);
+            Assert.IsNotNull(permits[0].Description);
+            Assert.IsNull(permits[0].ProposedUse);
+        }
+
+        [TestMethod]
+        public void TestMatchByBoxAndOptional()
+        {
+            List<Permit> permits = this.GetBoxPermits(null, FieldChoices.Optional);
+            Assert.AreEqual(30, permits.Count);
+            Assert.IsNotNull(permits[0].Description);
+            Assert.IsNotNull(permits[0].ProposedUse);
+        }
+
+        [TestMethod]
+        public void TestMatchByBoxAndMaster()
+        {
+            List<Permit> permits = this.GetBoxPermits(new List<TypeChoices>(new TypeChoices[] { TypeChoices.Master }));
+            Assert.AreEqual(15, permits.Count);
+        }
+
+        [TestMethod]
+        public void TestMatchByBoxAndFire()
+        {
+            List<Permit> permits = this.GetBoxPermits(new List<TypeChoices>(new TypeChoices[] { TypeChoices.Fire }));
+            Assert.AreEqual(6, permits.Count);
+        }
+
+        [TestMethod]
+        public void TestMatchByBoxAndBuilding()
+        {
+            List<Permit> permits = this.GetBoxPermits(new List<TypeChoices>(new TypeChoices[] { TypeChoices.Building }));
+            Assert.AreEqual(6, permits.Count);
+        }
+
+        [TestMethod]
+        public void TestMatchByBoxAndPlumbing()
+        {
+            List<Permit> permits = this.GetBoxPermits(new List<TypeChoices>(new TypeChoices[] { TypeChoices.Plumbing }));
+            Assert.AreEqual(6, permits.Count);
+        }
+
+        [TestMethod]
+        public void TestMatchByBoxAndElectrical()
+        {
+            List<Permit> permits = this.GetBoxPermits(new List<TypeChoices>(new TypeChoices[] { TypeChoices.Electrical }));
+            Assert.AreEqual(6, permits.Count);
+        }
+
+        [TestMethod]
+        public void TestMatchByBoxAndMechanical()
+        {
+            List<Permit> permits = this.GetBoxPermits(new List<TypeChoices>(new TypeChoices[] { TypeChoices.Mechanical }));
+            Assert.AreEqual(6, permits.Count);
+        }
+
+        public void TestBadBox()
+        {
+            PermitFilter filter = new PermitFilter();
+            Box box = new Box();
+
+            box.MinX = -85;
+            box.MaxX = -84;
+            box.MinY = 20;
+            box.MaxY = 21;
+            filter.BoundingBox = box;
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            List<Permit> permits = adapter.SearchPermits(filter);
+            Assert.AreEqual(0, permits.Count);
+        }
+
+        [TestMethod]
+        public void TestNoFilter()
+        {
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            List<Permit> permits = adapter.SearchPermits(new PermitFilter());
+            Assert.AreEqual(30, permits.Count);
+
+        }
+
         [TestMethod]
         public void TestGetExistingPermit()
         {
@@ -114,6 +232,7 @@ namespace OpenPermit.SQL.Tests
             Assert.AreEqual("INSPECTOR_5", inspection.Inspector);
         }
 
+
         [ClassCleanup]
         static public void CleanupTestDB()
         {
@@ -129,10 +248,12 @@ namespace OpenPermit.SQL.Tests
         static public void PopulateTestDB(TestContext ctx)
         {
             Database db = new Database("openpermit");
+            string[] types = new string[] { "BLDG", "FIRE", "ELEC", "MECH", "PLUM" };
             for (int i = 0; i < 30; i++)
             {
                 Permit permit = new Permit();
                 permit.AddedSqFt = i;
+                permit.MasterPermitNum = (i % 2).ToString();
                 permit.AppliedDate = DateTime.Now;
                 permit.COIssuedDate = DateTime.Now;
                 permit.CompletedDate = DateTime.Now;
@@ -170,7 +291,7 @@ namespace OpenPermit.SQL.Tests
                 permit.PermitClass = "PERM_" + i.ToString();
                 permit.PermitClassMapped = "PERM_" + i.ToString() + "_CLASS";
                 permit.PermitNum = "PERMNUM_" + i.ToString();
-                permit.PermitType = "PERMTYPE_" + i.ToString();
+                permit.PermitType = types[i % 5];
                 permit.PermitTypeDesc = "TYPEDESC_" + i.ToString();
                 permit.PermitTypeMapped = "TYPEMAPPEDDESC_" + i.ToString();
                 permit.PIN = "456" + (10 + i).ToString();
@@ -194,6 +315,8 @@ namespace OpenPermit.SQL.Tests
                 permit.WorkClassMapped = "WORKCLASS_" + i.ToString();
 
                 db.Insert("Permit", "PermitNum", false, permit);
+
+                db.Execute("UPDATE Permit SET Location=geography::Point(Latitude, Longitude, 4326)");
 
             }
 
