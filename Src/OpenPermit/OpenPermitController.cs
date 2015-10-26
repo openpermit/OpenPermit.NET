@@ -14,8 +14,6 @@ using System.Net.Http.Headers;
 using System.Web.Http.Cors;
 
 using Newtonsoft.Json;
-using GeoJSON.Net.Feature;
-using System.Reflection;
 
 
 namespace OpenPermit
@@ -89,11 +87,11 @@ namespace OpenPermit
         }
 
         private bool TryPopulatePermitFilter(out PermitFilter filter,
-                                             string number = null, 
-                                             string address = null, 
-                                             string bbox = null,
-                                             string types = null,
-                                             string fields = "all")
+                                             string number, 
+                                             string address, 
+                                             string bbox,
+                                             string types,
+                                             string fields)
         {
             filter = new PermitFilter
             {
@@ -197,7 +195,7 @@ namespace OpenPermit
                                               string address = null, 
                                               string bbox = null,
                                               string types = null,
-                                              string fields = null)
+                                              string fields = "all")
         {
 
             var filter = new PermitFilter();
