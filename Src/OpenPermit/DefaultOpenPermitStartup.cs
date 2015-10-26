@@ -11,6 +11,8 @@ using Newtonsoft.Json.Serialization;
 using System.Web.Http.Filters;
 using System.Web.Http.Controllers;
 using System.Web.Http.Cors;
+using Microsoft.AspNet.WebApi.MessageHandlers.Compression;
+using Microsoft.AspNet.WebApi.MessageHandlers.Compression.Compressors;
 
 [assembly: OwinStartup(typeof(OpenPermit.DefaultOpenPermitStartup))]
 
@@ -65,7 +67,7 @@ namespace OpenPermit
             config.MapHttpAttributeRoutes();
 
             var settings = new JsonSerializerSettings();
-            settings.ContractResolver = new LowercaseContractResolver();
+            settings.ContractResolver = new CamelCasePropertyNamesContractResolver();
             settings.NullValueHandling = NullValueHandling.Ignore;
             settings.DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate;
             config.Formatters.JsonFormatter.SerializerSettings = settings;
@@ -74,6 +76,7 @@ namespace OpenPermit
             var adapter = factory.GetOpenPermitAdapter();
 
             config.Services.Add(typeof(IFilterProvider), new DefaultOpenPermitAdapterFilter(adapter));
+            config.MessageHandlers.Insert(0, new ServerCompressionHandler(4096, new GZipCompressor(), new DeflateCompressor()));
             app.UseWebApi(config);
         }
     }
