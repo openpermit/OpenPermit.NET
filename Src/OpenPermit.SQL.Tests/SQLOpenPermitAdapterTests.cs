@@ -166,6 +166,40 @@ namespace OpenPermit.SQL.Tests
         }
 
         [TestMethod]
+        public void TestNoFilterMatchMechanical()
+        {   
+            PermitFilter filter = new PermitFilter();
+            filter.Types = new List<TypeChoices>(new TypeChoices[] { TypeChoices.Mechanical });
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            List<Permit> permits = adapter.SearchPermits(filter);
+            Assert.AreEqual(6, permits.Count);
+
+        }
+
+        [TestMethod]
+        public void TestNoFilterMatchStatusClosed()
+        {
+            PermitFilter filter = new PermitFilter();
+            filter.Status = new List<StatusChoices>(new StatusChoices[] { StatusChoices.Closed });
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            List<Permit> permits = adapter.SearchPermits(filter);
+            Assert.AreEqual(7, permits.Count);
+
+        }
+
+        [TestMethod]
+        public void TestNoFilterMatchTimeFrameClosed()
+        {
+            PermitFilter filter = new PermitFilter();
+            filter.TimeFrame = new Tuple<StatusChoices, DateTime, DateTime>(StatusChoices.Closed,
+                Convert.ToDateTime("01/01/2013"), Convert.ToDateTime("01/01/2014"));
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            List<Permit> permits = adapter.SearchPermits(filter);
+            Assert.AreEqual(8, permits.Count);
+
+        }
+
+        [TestMethod]
         public void TestGetExistingPermit()
         {
             IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
@@ -249,14 +283,20 @@ namespace OpenPermit.SQL.Tests
         {
             Database db = new Database("openpermit");
             string[] types = new string[] { "BLDG", "FIRE", "ELEC", "MECH", "PLUM" };
+            string[] currStatus = new string[] { "APPLIED", "ISSUED", "CLOSED", "EXPIRED" };
+            string[] statusMapped = new string[] { "Application Accepted", "Permit Issued", "Permit Finaled", "Permit Cancelled" };
+            string[] applied = new string[] { "01/01/2012", "01/01/2013", "01/01/2014", "01/01/2015" };
+            string[] issued = new string[] { "01/02/2012", "01/02/2013", "01/02/2014", "01/02/2015" };
+            string[] closed = new string[] { "03/01/2012", "03/01/2013", "03/01/2014", "03/01/2015" };
+            string[] expired = new string[] { "06/01/2012", "06/01/2013", "06/01/2014", "06/01/2015" };
             for (int i = 0; i < 30; i++)
             {
                 Permit permit = new Permit();
                 permit.AddedSqFt = i;
                 permit.MasterPermitNum = (i % 2).ToString();
-                permit.AppliedDate = DateTime.Now;
+                permit.AppliedDate = Convert.ToDateTime(applied[i % 4]);
                 permit.COIssuedDate = DateTime.Now;
-                permit.CompletedDate = DateTime.Now;
+                permit.CompletedDate = Convert.ToDateTime(closed[i % 4]);
                 permit.ContractorAddress1 = String.Format("29{0} SW {1} Ave", i, i + 6);
                 permit.ContractorAddress2 = "Address2_" + i.ToString();
                 permit.ContractorCity = "Miami";
@@ -273,12 +313,12 @@ namespace OpenPermit.SQL.Tests
                 permit.ContractorZip = "331" + (i + 40).ToString();
                 permit.Description = "PermitDescription_" + i.ToString();
                 permit.EstProjectCost = 30000 + i;
-                permit.ExpiresDate = DateTime.Now;
+                permit.ExpiresDate = Convert.ToDateTime(expired[i % 4]);
                 permit.ExtraFields = "{'blah': 'blue'}";
                 permit.Fee = 30 + i;
                 permit.HoldDate = DateTime.Now;
                 permit.HousingUnits = i;
-                permit.IssuedDate = DateTime.Now;
+                permit.IssuedDate = Convert.ToDateTime(issued[i % 4]);
                 permit.Jurisdiction = "Miami-Dade";
                 permit.Latitude = 25.700189 - (double)i/100;
                 permit.Link = String.Format("http://permiturl{0}.com", i);
@@ -300,8 +340,8 @@ namespace OpenPermit.SQL.Tests
                 permit.ProposedUse = "PORPUSE_" + i.ToString();
                 permit.Publisher = "PUBLISH_" + i.ToString();
                 permit.RemovedSqFt = i;
-                permit.StatusCurrent = "STATUS_" + i.ToString();
-                permit.StatusCurrentMapped = "STATUSMAPPED_" + i.ToString();
+                permit.StatusCurrent = currStatus[i % 4];
+                permit.StatusCurrentMapped = statusMapped[i % 4];
                 permit.StatusDate = DateTime.Now;
                 permit.TotalAccSqFt = 10000 + i;
                 permit.TotalFinishedSqFt = 5000 + i;
