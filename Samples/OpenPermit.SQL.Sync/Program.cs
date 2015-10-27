@@ -42,7 +42,10 @@ namespace OpenPermit.MDC.Sync
 
             foreach (Permit permit in permits.Item2)
             {
-                processMDCInpsections(permit, db);
+                if (!checkIfExpired(permit))
+                {
+                    processMDCInpsections(permit, db);
+                }
                 db.Update("Permit", "PermitNum", permit);
             }
 
@@ -51,6 +54,50 @@ namespace OpenPermit.MDC.Sync
             db.Execute("UPDATE Permit SET Location=geography::Point(Latitude, Longitude, 4326)");
             Console.WriteLine(DateTime.Now);
             Console.WriteLine("Done");
+
+        }
+
+        private static bool checkIfExpired(Permit permit)
+        {
+            string relURL = String.Format("BNZAW963.DIA?PERM={0}", permit.PermitNum);
+            string addressUrl = ConfigurationManager.AppSettings.Get("OP.MDC.Web.Url");
+            addressUrl = addressUrl + relURL;
+
+            string content = DoGet(addressUrl);
+            if (content == null)
+            {
+                return false;
+            }
+
+            HtmlDocument doc = new HtmlDocument();
+
+            doc.LoadHtml(content);
+                        
+            string expiredDate = "";
+            string prevText = "";
+
+            foreach (HtmlNode td in doc.DocumentNode.SelectNodes("//table/tr/td"))
+            {
+                string inText = td.InnerText;
+                inText = inText.Trim().Replace("&nbsp;", "");
+
+                if (prevText == "Expiration Date:")
+                {
+                    expiredDate = inText;                     
+                }                
+
+                prevText = inText;
+            }
+
+            if (expiredDate != "")
+            {
+                permit.ExpiresDate = Convert.ToDateTime(expiredDate);
+                permit.StatusCurrent = "EXPIRED";
+                permit.StatusCurrentMapped = "Permit Cancelled";
+                return true;
+            }
+
+            return false;
 
         }
 
@@ -69,6 +116,7 @@ namespace OpenPermit.MDC.Sync
                 PermitStatus status = new PermitStatus();
                 status.PermitNum = permit.PermitNum;
                 status.StatusPrevious = "APPLIED";
+                status.StatusPreviousMapped = "Application Accepted";
                 status.StatusPreviousDate = permit.AppliedDate;
 
                 db.Insert("PermitStatus", "id", true, status);
@@ -82,6 +130,7 @@ namespace OpenPermit.MDC.Sync
                 PermitStatus status = new PermitStatus();
                 status.PermitNum = permit.PermitNum;
                 status.StatusPrevious = "ISSUED";
+                status.StatusPreviousMapped = "Permit Issued";
                 status.StatusPreviousDate = permit.IssuedDate;
 
                 db.Insert("PermitStatus", "id", true, status);
@@ -95,6 +144,7 @@ namespace OpenPermit.MDC.Sync
                 PermitStatus status = new PermitStatus();
                 status.PermitNum = permit.PermitNum;
                 status.StatusPrevious = "CLOSED";
+                status.StatusPreviousMapped = "Permit Finaled";
                 status.StatusPreviousDate = lastApprovedInspectionDate;
 
                 db.Insert("PermitStatus", "id", true, status);
@@ -262,9 +312,11 @@ namespace OpenPermit.MDC.Sync
 
             List<Permit> knownPermits = adapter.SearchPermits(new PermitFilter());
 
+            string[] unactivePermits = new string[] {"CLOSED", "EXPIRED"};
+
             foreach (Permit permit in knownPermits)
             {
-                if (permit.StatusCurrent == "CLOSED")
+                if (unactivePermits.Contains(permit.StatusCurrent))
                 {
                     closedPermits.Add(permit.PermitNum);
                 }

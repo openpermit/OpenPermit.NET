@@ -49,6 +49,14 @@ namespace OpenPermit
         Fire
     }
 
+    public enum StatusChoices
+    {
+        Applied,
+        Issued,
+        Closed,
+        Expired
+    }
+
     public struct PermitFilter
     {
         public string PermitNumber { get; set; }
@@ -56,6 +64,8 @@ namespace OpenPermit
         public Box BoundingBox { get; set; }
         public List<TypeChoices> Types { get; set; }
         public FieldChoices Fields { get; set; }
+        public List<StatusChoices> Status { get; set; }
+        public Tuple<StatusChoices, DateTime, DateTime> TimeFrame;
     }
 
     public struct PermitType
