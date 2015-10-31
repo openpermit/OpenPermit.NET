@@ -91,7 +91,11 @@ namespace OpenPermit
                                              string address, 
                                              string bbox,
                                              string types,
-                                             string fields)
+                                             string fields,
+                                             string status,
+                                             string dateType,
+                                             string startDate,
+                                             string endDate)
         {
             filter = new PermitFilter
             {
@@ -172,8 +176,44 @@ namespace OpenPermit
                 }
             }
 
+            if (status != null)
+            {
+                string[] statusArray = status.Split(',');
+                var choices = new List<StatusChoices>();
+                foreach (string stat in statusArray)
+                {
+                    StatusChoices choice;
+                    if (Enum.TryParse<StatusChoices>(stat, true, out choice))
+                    {
+                        choices.Add(choice);
+                    }
+                }
+
+                if (choices.Count > 0)
+                {
+                    filter.Status = choices;
+                }
+            }
+
+            if (startDate != null)
+            {
+                StatusChoices choice = StatusChoices.Applied;
+                DateTime eDate = DateTime.Now;
+                DateTime sDate = Convert.ToDateTime(startDate);
+
+                if (dateType != null)
+                    Enum.TryParse<StatusChoices>(dateType, true, out choice);
+
+                if (endDate != null)
+                    eDate = Convert.ToDateTime(endDate);
+
+                filter.TimeFrame = new Tuple<StatusChoices, DateTime, DateTime>(choice, sDate, eDate);
+            }
+
             return true;
         }
+
+        
 
         /// <summary>
         /// Implements OpenPermit Specification "GET permits" endpoint
@@ -195,11 +235,16 @@ namespace OpenPermit
                                               string address = null, 
                                               string bbox = null,
                                               string types = null,
-                                              string fields = "all")
+                                              string fields = "all",
+                                              string status = null,
+                                              string dateType = null,
+                                              string startDate = null,
+                                              string endDate = null)
         {
 
             var filter = new PermitFilter();
-            if (TryPopulatePermitFilter(out filter, number, address, bbox, types, fields))
+            if (TryPopulatePermitFilter(out filter, number, address, bbox, types, fields, status, dateType, 
+                startDate, endDate))
             {
                 List<Permit> permits = Adapter.SearchPermits(filter);
 
