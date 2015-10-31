@@ -158,7 +158,7 @@ namespace OpenPermit.MDC.Sync
             Console.WriteLine(DateTime.Now);
             foreach (Inspection inspection in inspections)
             {
-                db.Insert("Inspection", "UniqueId", true, inspection);
+                db.Insert("Inspection", "Id", true, inspection);
             }
         }
 

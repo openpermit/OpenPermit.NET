@@ -1,6 +1,6 @@
 
 CREATE TABLE [dbo].[Inspection](
-	[UniqueId] [int] IDENTITY(1,1) NOT NULL,
+	[Id] [int] IDENTITY(1,1) NOT NULL,
 	[PermitNum] [varchar](100) NOT NULL,
 	[InspType] [varchar](50) NULL,
 	[InspTypeMapped] [varchar](50) NULL,
@@ -16,9 +16,8 @@ CREATE TABLE [dbo].[Inspection](
 	[ReInspection] [int] NULL,
 	[Inspector] [varchar](50) NULL,
 	[ExtraFields] [varchar](max) NULL,
-	[Id] [varchar](50) NULL,
  CONSTRAINT [PK_Inspection] PRIMARY KEY CLUSTERED 
 (
-	[UniqueId] ASC
+	[Id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]

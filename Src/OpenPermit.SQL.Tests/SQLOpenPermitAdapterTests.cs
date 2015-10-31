@@ -253,7 +253,7 @@ namespace OpenPermit.SQL.Tests
         public void TestGetBadInspection()
         {
             IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
-            Inspection inspection = adapter.GetInspection("PERMNUM_15", "MYID_25");
+            Inspection inspection = adapter.GetInspection("PERMNUM_15", "-1");
             Assert.IsNull(inspection);
         }
 
@@ -261,9 +261,11 @@ namespace OpenPermit.SQL.Tests
         public void TestGetPermitInspection()
         {
             IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
-            Inspection inspection = adapter.GetInspection("PERMNUM_15", "MYID_5");
+            List<Inspection> inspections = adapter.GetInspections("PERMNUM_15");
+            Inspection refInspection = inspections[5];
+            Inspection inspection = adapter.GetInspection("PERMNUM_15", refInspection.Id);
             Assert.IsNotNull(inspection);
-            Assert.AreEqual("INSPECTOR_5", inspection.Inspector);
+            Assert.AreEqual(refInspection.Inspector, inspection.Inspector);
         }
 
 
@@ -377,7 +379,6 @@ namespace OpenPermit.SQL.Tests
             {
                 Inspection inspection = new Inspection();
                 inspection.PermitNum = "PERMNUM_15";
-                inspection.Id = "MYID_" + j;
                 inspection.InspectedDate = DateTime.Now;
                 inspection.InspectionNotes = "MYNOTES_" + j;
                 inspection.Inspector = "INSPECTOR_" + j;
@@ -393,7 +394,7 @@ namespace OpenPermit.SQL.Tests
                 inspection.ExtraFields = "{'blah': 'blue'}";
                 inspection.Final = 1;
 
-                db.Insert("Inspection", "UniqueId", true, inspection);
+                db.Insert("Inspection", "Id", true, inspection);
 
             }
 
