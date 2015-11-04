@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using System.Runtime.Serialization;
 
 
 namespace OpenPermit
@@ -51,9 +52,17 @@ namespace OpenPermit
 
     public enum StatusChoices
     {
+        [EnumMember(Value = "Application Acceptance")]
         Applied,
+        [EnumMember(Value = "In Review")]
+        PlanReview,
+        [EnumMember(Value = "Permit Issued")]
         Issued,
+        [EnumMember(Value = "Inspection Phase")]
+        Inspections,
+        [EnumMember(Value = "Permit Finaled")]
         Closed,
+        [EnumMember(Value = "Permit Cancelled")]
         Expired
     }
 

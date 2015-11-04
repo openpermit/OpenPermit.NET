@@ -166,24 +166,34 @@ namespace OpenPermit.SQL
 
             if (filter.Status != null)
             {
+                conditions += "StatusCurrentMapped IN (";
+
                 foreach (StatusChoices status in filter.Status)
                 {
                     switch (status)
                     {
                         case StatusChoices.Applied:
-                            conditions += "StatusCurrentMapped = 'Application Accepted' and ";
+                            conditions += "'Application Accepted',";
+                            break;
+                        case StatusChoices.PlanReview:
+                            conditions += "'In Review',";
                             break;
                         case StatusChoices.Issued:
-                            conditions += "StatusCurrentMapped = 'Permit Issued' and ";
+                            conditions += "'Permit Issued',";
+                            break;
+                        case StatusChoices.Inspections:
+                            conditions += "'Inspection Phase',";
                             break;
                         case StatusChoices.Closed:
-                            conditions += "StatusCurrentMapped = 'Permit Finaled' and ";
+                            conditions += "'Permit Finaled',";
                             break;
                         case StatusChoices.Expired:
-                            conditions += "StatusCurrentMapped = 'Permit Cancelled' and ";
+                            conditions += "'Permit Cancelled',";
                             break;
                     }
                 }
+                conditions = conditions.Remove(conditions.Length - 1);
+                conditions += ") AND ";
             }
 
             if (filter.TimeFrame != null)

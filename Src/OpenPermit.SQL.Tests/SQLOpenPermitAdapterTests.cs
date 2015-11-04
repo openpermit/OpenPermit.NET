@@ -188,6 +188,17 @@ namespace OpenPermit.SQL.Tests
         }
 
         [TestMethod]
+        public void TestNoFilterMatchStatusMultipleStatuses()
+        {
+            PermitFilter filter = new PermitFilter();
+            filter.Status = new List<StatusChoices>(new StatusChoices[] { StatusChoices.Applied, StatusChoices.Closed });
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            List<Permit> permits = adapter.SearchPermits(filter);
+            Assert.AreEqual(14, permits.Count);
+
+        }
+
+        [TestMethod]
         public void TestNoFilterMatchTimeFrameClosed()
         {
             PermitFilter filter = new PermitFilter();

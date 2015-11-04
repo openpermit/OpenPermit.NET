@@ -15,7 +15,6 @@ using System.Web.Http.Cors;
 
 using Newtonsoft.Json;
 
-
 namespace OpenPermit
 {
     /// <summary>
@@ -183,7 +182,7 @@ namespace OpenPermit
                 foreach (string stat in statusArray)
                 {
                     StatusChoices choice;
-                    if (Enum.TryParse<StatusChoices>(stat, true, out choice))
+                    if (EnumUtils.TryParse<StatusChoices>(stat, true, out choice))
                     {
                         choices.Add(choice);
                     }
@@ -237,14 +236,14 @@ namespace OpenPermit
                                               string types = null,
                                               string fields = "all",
                                               string status = null,
-                                              string dateType = null,
-                                              string startDate = null,
-                                              string endDate = null)
+                                              string date = null,
+                                              string from = null,
+                                              string to = null)
         {
 
             var filter = new PermitFilter();
-            if (TryPopulatePermitFilter(out filter, number, address, bbox, types, fields, status, dateType, 
-                startDate, endDate))
+            if (TryPopulatePermitFilter(out filter, number, address, bbox, types, fields, status, date, 
+                from, to))
             {
                 List<Permit> permits = Adapter.SearchPermits(filter);
 
