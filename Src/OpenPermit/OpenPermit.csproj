@@ -89,6 +89,7 @@
   <ItemGroup>
     <Compile Include="DefaultOpenPermitAdapterFactory.cs" />
     <Compile Include="DefaultOpenPermitStartup.cs" />
+    <Compile Include="EnumUtils.cs" />
     <Compile Include="IOpenPermitAdapter.cs" />
     <Compile Include="IOpenPermitAdapterFactory.cs" />
     <Compile Include="OpenPermitAdapterException.cs" />
