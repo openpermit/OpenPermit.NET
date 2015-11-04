@@ -164,7 +164,7 @@ namespace OpenPermit.SQL
                 }
             }
 
-            if (filter.Status != null)
+            if (filter.Status != null && filter.Status.Count > 0)
             {
                 conditions += "StatusCurrentMapped IN (";
 
@@ -193,7 +193,7 @@ namespace OpenPermit.SQL
                     }
                 }
                 conditions = conditions.Remove(conditions.Length - 1);
-                conditions += ") AND ";
+                conditions += ") and ";
             }
 
             if (filter.TimeFrame != null)
