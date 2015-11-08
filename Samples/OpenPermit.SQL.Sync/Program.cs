@@ -10,9 +10,11 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using OpenPermit.SQL;
+using System.Net.Mail;
 
 namespace OpenPermit.MDC.Sync
 {
+    
     public class JobAddress
     {
         public string address { get; set; }
@@ -23,37 +25,63 @@ namespace OpenPermit.MDC.Sync
 
     class Program
     {
+        
+        
         static void Main(string[] args)
         {
-            Console.WriteLine(DateTime.Now);
-            Console.WriteLine("Bringing data from Socrata");
-            var permits = getPermitsToSync();
-            Console.WriteLine(DateTime.Now);
-       
-            Database db = new Database("openpermit");
-            
-            Console.WriteLine(DateTime.Now);
-            Console.WriteLine("Inserting Data into DB");
-            foreach (Permit permit in permits.Item1)
+            try
             {
-                processMDCInpsections(permit, db);
-                db.Insert("Permit", "PermitNum", false, permit);
-            }
+                SendEMail("Started MDC OpenPermit Sync");
+                Console.WriteLine("Sync Job Started on: " + DateTime.Now.ToString());              
+                Console.WriteLine("Bringing data from Socrata");
+                var permits = getPermitsToSync();
 
-            foreach (Permit permit in permits.Item2)
-            {
-                if (!checkIfExpired(permit))
+                Database db = new Database("openpermit");
+
+                Console.WriteLine("Inserting Data into DB");
+                foreach (Permit permit in permits.Item1)
                 {
                     processMDCInpsections(permit, db);
+                    db.Insert("Permit", "PermitNum", false, permit);
                 }
-                db.Update("Permit", "PermitNum", permit);
+
+                SendEMail(String.Format("Inserted {0} new permit records.", permits.Item1.Count));
+
+                foreach (Permit permit in permits.Item2)
+                {
+                    if (!checkIfExpired(permit))
+                    {
+                        processMDCInpsections(permit, db);
+                    }
+                    db.Update("Permit", "PermitNum", permit);
+                }
+
+                SendEMail(String.Format("Processed {0} existing permit records.", permits.Item2.Count));
+
+                Console.WriteLine("Populating Geography Field");
+                db.Execute("UPDATE Permit SET Location=geography::Point(Latitude, Longitude, 4326)");
+                Console.WriteLine("Sync Job Done on: " + DateTime.Now.ToString());  
+                SendEMail("MDC OpenPermit Sync is done");
+            }
+            catch (Exception ex)
+            {
+                SendEMail(String.Format("Error found running MDC OpenPermit Sync. Error: {0}", ex.Message));
             }
 
-            Console.WriteLine(DateTime.Now);
-            Console.WriteLine("Populating Geography Field");
-            db.Execute("UPDATE Permit SET Location=geography::Point(Latitude, Longitude, 4326)");
-            Console.WriteLine(DateTime.Now);
-            Console.WriteLine("Done");
+        }
+
+        private static void SendEMail(string message)
+        {
+            string server = ConfigurationManager.AppSettings.Get("OP.SMTP.Server");
+            string fromAddr = ConfigurationManager.AppSettings.Get("OP.SMTP.From.Address");
+            string toAddr = ConfigurationManager.AppSettings.Get("OP.SMTP.To.Address");
+            SmtpClient client = new SmtpClient(server);
+            MailAddress from = new MailAddress(fromAddr);
+            MailAddress to = new MailAddress(toAddr);
+            MailMessage note = new MailMessage(from, to);
+            note.Subject = "OpenPermit had some activity";
+            note.Body = message;
+            client.Send(note);
 
         }
 
@@ -155,7 +183,6 @@ namespace OpenPermit.MDC.Sync
 
             }
 
-            Console.WriteLine(DateTime.Now);
             foreach (Inspection inspection in inspections)
             {
                 db.Insert("Inspection", "Id", true, inspection);
