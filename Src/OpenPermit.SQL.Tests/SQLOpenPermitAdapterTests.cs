@@ -194,7 +194,7 @@ namespace OpenPermit.SQL.Tests
             filter.Status = new List<StatusChoices>(new StatusChoices[] { StatusChoices.Applied, StatusChoices.Closed });
             IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
             List<Permit> permits = adapter.SearchPermits(filter);
-            Assert.AreEqual(14, permits.Count);
+            Assert.AreEqual(15, permits.Count);
 
         }
 
