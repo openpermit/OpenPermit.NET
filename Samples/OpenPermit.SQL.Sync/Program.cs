@@ -65,7 +65,9 @@ namespace OpenPermit.MDC.Sync
             }
             catch (Exception ex)
             {
-                SendEMail(String.Format("Error found running MDC OpenPermit Sync. Error: {0}", ex.Message));
+                string errorMsg = String.Format("Error found running MDC OpenPermit Sync. Error: {0}", ex.Message);
+                Console.WriteLine(errorMsg);
+                SendEMail(errorMsg);
             }
 
         }
@@ -150,6 +152,7 @@ namespace OpenPermit.MDC.Sync
                 db.Insert("PermitStatus", "id", true, status);
 
                 permit.StatusCurrent = status.StatusPrevious;
+                permit.StatusCurrentMapped = status.StatusPreviousMapped;
                 permit.StatusDate = status.StatusPreviousDate;
             }
 
@@ -164,6 +167,7 @@ namespace OpenPermit.MDC.Sync
                 db.Insert("PermitStatus", "id", true, status);
 
                 permit.StatusCurrent = status.StatusPrevious;
+                permit.StatusCurrentMapped = status.StatusPreviousMapped;
                 permit.StatusDate = status.StatusPreviousDate;
             }
 
@@ -178,6 +182,7 @@ namespace OpenPermit.MDC.Sync
                 db.Insert("PermitStatus", "id", true, status);
 
                 permit.StatusCurrent = status.StatusPrevious;
+                permit.StatusCurrentMapped = status.StatusPreviousMapped;
                 permit.StatusDate = status.StatusPreviousDate;
                 permit.CompletedDate = status.StatusPreviousDate;
 
