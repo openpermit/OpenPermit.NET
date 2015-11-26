@@ -41,19 +41,41 @@ namespace OpenPermit.MDC.Sync
                 Console.WriteLine("Inserting Data into DB");
                 foreach (Permit permit in permits.Item1)
                 {
-                    processMDCInpsections(permit, db);
-                    db.Insert("Permit", "PermitNum", false, permit);
+                    try
+                    {
+                        processMDCInpsections(permit, db);
+                        db.Insert("Permit", "PermitNum", false, permit);
+                    }
+                    catch (Exception ex)
+                    {
+                        string errorMsg = String.Format("Error found Inserting Permit {0}: Error: '{1}' with Stack Trace: {2}",
+                            permit.PermitNum, ex.Message, ex.StackTrace);
+                        Console.WriteLine(errorMsg);
+                        SendEMail(errorMsg);
+                    }
                 }
 
                 SendEMail(String.Format("Inserted {0} new permit records.", permits.Item1.Count));
 
                 foreach (Permit permit in permits.Item2)
                 {
-                    if (!checkIfExpired(permit))
+                    try
                     {
-                        processMDCInpsections(permit, db);
+
+                        if (!checkIfExpired(permit))
+                        {
+                            processMDCInpsections(permit, db);
+                        }
+                        db.Update("Permit", "PermitNum", permit);
                     }
-                    db.Update("Permit", "PermitNum", permit);
+                    catch (Exception ex)
+                    {
+                        string errorMsg = String.Format("Error found Processing Permit {0}: Error: '{1}' with Stack Trace: {2}",
+                            permit.PermitNum, ex.Message, ex.StackTrace);
+                        Console.WriteLine(errorMsg);
+                        SendEMail(errorMsg);
+                    }
+                    
                 }
 
                 SendEMail(String.Format("Processed {0} existing permit records.", permits.Item2.Count));
@@ -65,7 +87,8 @@ namespace OpenPermit.MDC.Sync
             }
             catch (Exception ex)
             {
-                string errorMsg = String.Format("Error found running MDC OpenPermit Sync. Error: {0}", ex.Message);
+                string errorMsg = String.Format("Error found running MDC OpenPermit Sync. Error: '{0}' with Stack Trace: {1}",
+                    ex.Message, ex.StackTrace);
                 Console.WriteLine(errorMsg);
                 SendEMail(errorMsg);
             }
@@ -74,16 +97,25 @@ namespace OpenPermit.MDC.Sync
 
         private static void SendEMail(string message)
         {
-            string server = ConfigurationManager.AppSettings.Get("OP.SMTP.Server");
-            string fromAddr = ConfigurationManager.AppSettings.Get("OP.SMTP.From.Address");
-            string toAddr = ConfigurationManager.AppSettings.Get("OP.SMTP.To.Address");
-            SmtpClient client = new SmtpClient(server);
-            MailAddress from = new MailAddress(fromAddr);
-            MailAddress to = new MailAddress(toAddr);
-            MailMessage note = new MailMessage(from, to);
-            note.Subject = "OpenPermit had some activity";
-            note.Body = message;
-            client.Send(note);
+            try
+            {
+                string server = ConfigurationManager.AppSettings.Get("OP.SMTP.Server");
+                string fromAddr = ConfigurationManager.AppSettings.Get("OP.SMTP.From.Address");
+                string toAddr = ConfigurationManager.AppSettings.Get("OP.SMTP.To.Address");
+                SmtpClient client = new SmtpClient(server);
+                MailAddress from = new MailAddress(fromAddr);
+                MailAddress to = new MailAddress(toAddr);
+                MailMessage note = new MailMessage(from, to);
+                note.Subject = "OpenPermit had some activity";
+                note.Body = message;
+                client.Send(note);
+            }
+            catch (Exception ex)
+            {
+                string errorMsg = String.Format("Error Found Sending email: {0} Error was: {1} with Stack Trace: {2}",
+                    message, ex.Message, ex.StackTrace);
+                Console.WriteLine(errorMsg);
+            }
 
         }
 
