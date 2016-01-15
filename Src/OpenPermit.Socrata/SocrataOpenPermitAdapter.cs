@@ -176,7 +176,7 @@ namespace OpenPermit.Socrata
             //Only Page Filter support at the moment
             if ( filter.Page == null)
             {
-                return this.getSocrataPermits(10, 0);
+                return this.getSocrataPermits();
             }
 
             return this.getSocrataPermits(filter.Page.limmit, filter.Page.offset);
