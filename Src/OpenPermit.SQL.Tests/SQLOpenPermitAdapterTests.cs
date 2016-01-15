@@ -14,7 +14,7 @@ namespace OpenPermit.SQL.Tests
         {
             PermitFilter filter = new PermitFilter();
             filter.Address = "9672 SW 158th Ave Miami, FL 33196";
-            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdapter();
 
             List<Permit> permits = adapter.SearchPermits(filter);
 
@@ -27,7 +27,7 @@ namespace OpenPermit.SQL.Tests
         {
             PermitFilter filter = new PermitFilter();
             filter.Address = "WE$R@cdfg45";
-            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdapter();
 
             List<Permit> permits = adapter.SearchPermits(filter);
 
@@ -40,7 +40,7 @@ namespace OpenPermit.SQL.Tests
         {
             PermitFilter filter = new PermitFilter();
             filter.Address = "825 NW 129 Ave Miami, FL 33182";
-            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdapter();
 
             List<Permit> permits = adapter.SearchPermits(filter);
 
@@ -59,7 +59,7 @@ namespace OpenPermit.SQL.Tests
             filter.BoundingBox = box;
             filter.Types = types;
             filter.Fields = fields;
-            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdapter();
             List<Permit> permits = adapter.SearchPermits(filter);
 
             return permits;
@@ -151,7 +151,7 @@ namespace OpenPermit.SQL.Tests
             box.MinY = 20;
             box.MaxY = 21;
             filter.BoundingBox = box;
-            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdapter();
             List<Permit> permits = adapter.SearchPermits(filter);
             Assert.AreEqual(0, permits.Count);
         }
@@ -159,7 +159,7 @@ namespace OpenPermit.SQL.Tests
         [TestMethod]
         public void TestNoFilter()
         {
-            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdapter();
             List<Permit> permits = adapter.SearchPermits(new PermitFilter());
             Assert.AreEqual(30, permits.Count);
 
@@ -170,7 +170,7 @@ namespace OpenPermit.SQL.Tests
         {   
             PermitFilter filter = new PermitFilter();
             filter.Types = new List<TypeChoices>(new TypeChoices[] { TypeChoices.Mechanical });
-            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdapter();
             List<Permit> permits = adapter.SearchPermits(filter);
             Assert.AreEqual(6, permits.Count);
 
@@ -181,7 +181,7 @@ namespace OpenPermit.SQL.Tests
         {
             PermitFilter filter = new PermitFilter();
             filter.Status = new List<StatusChoices>(new StatusChoices[] { StatusChoices.Closed });
-            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdapter();
             List<Permit> permits = adapter.SearchPermits(filter);
             Assert.AreEqual(7, permits.Count);
 
@@ -192,7 +192,7 @@ namespace OpenPermit.SQL.Tests
         {
             PermitFilter filter = new PermitFilter();
             filter.Status = new List<StatusChoices>(new StatusChoices[] { StatusChoices.Applied, StatusChoices.Closed });
-            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdapter();
             List<Permit> permits = adapter.SearchPermits(filter);
             Assert.AreEqual(15, permits.Count);
 
@@ -204,7 +204,7 @@ namespace OpenPermit.SQL.Tests
             PermitFilter filter = new PermitFilter();
             filter.TimeFrame = new Tuple<StatusChoices, DateTime, DateTime>(StatusChoices.Closed,
                 Convert.ToDateTime("01/01/2013"), Convert.ToDateTime("01/01/2014"));
-            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdapter();
             List<Permit> permits = adapter.SearchPermits(filter);
             Assert.AreEqual(8, permits.Count);
 
@@ -213,7 +213,7 @@ namespace OpenPermit.SQL.Tests
         [TestMethod]
         public void TestGetExistingPermit()
         {
-            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdapter();
             Permit permit = adapter.GetPermit("PERMNUM_17");
             Assert.IsNotNull(permit);
             Assert.AreEqual("34RT56890317", permit.ContractorLicNum);
@@ -223,7 +223,7 @@ namespace OpenPermit.SQL.Tests
         [TestMethod]
         public void TestGetBadPermit()
         {
-            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdapter();
             Permit permit = adapter.GetPermit("PERMNUM_45");
             Assert.IsNull(permit);
         }
@@ -231,7 +231,7 @@ namespace OpenPermit.SQL.Tests
         [TestMethod]
         public void TestGetBadPermitTimeline()
         {
-            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdapter();
             List<PermitStatus> timeline = adapter.GetPermitTimeline("PERMNUM_45");
             Assert.AreEqual(timeline.Count, 0);
         }
@@ -239,7 +239,7 @@ namespace OpenPermit.SQL.Tests
         [TestMethod]
         public void TestGetPermitTimeline()
         {
-            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdapter();
             List<PermitStatus> timeline = adapter.GetPermitTimeline("PERMNUM_15");
             Assert.AreEqual(timeline.Count, 10);
         }
@@ -247,7 +247,7 @@ namespace OpenPermit.SQL.Tests
         [TestMethod]
         public void TestGetBadInspections()
         {
-            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdapter();
             List<Inspection> inspections = adapter.GetInspections("PERMNUM_45");
             Assert.AreEqual(inspections.Count, 0);
         }
@@ -255,7 +255,7 @@ namespace OpenPermit.SQL.Tests
         [TestMethod]
         public void TestGetPermitInspections()
         {
-            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdapter();
             List<Inspection> inspections = adapter.GetInspections("PERMNUM_15");
             Assert.AreEqual(inspections.Count, 10);
         }
@@ -263,7 +263,7 @@ namespace OpenPermit.SQL.Tests
         [TestMethod]
         public void TestGetBadInspection()
         {
-            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdapter();
             Inspection inspection = adapter.GetInspection("PERMNUM_15", "-1");
             Assert.IsNull(inspection);
         }
@@ -271,7 +271,7 @@ namespace OpenPermit.SQL.Tests
         [TestMethod]
         public void TestGetPermitInspection()
         {
-            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdapter();
             List<Inspection> inspections = adapter.GetInspections("PERMNUM_15");
             Inspection refInspection = inspections[5];
             Inspection inspection = adapter.GetInspection("PERMNUM_15", refInspection.Id);

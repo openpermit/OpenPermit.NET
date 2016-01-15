@@ -32,6 +32,12 @@ namespace OpenPermit
         public double MaxY { get; set; }
     }
 
+    public class Page
+    {
+        public int offset { get; set; }
+        public int limmit { get; set; }
+    }
+
     public enum FieldChoices
     {
         Geo = 1,
@@ -73,6 +79,7 @@ namespace OpenPermit
         public Box BoundingBox { get; set; }
         public List<TypeChoices> Types { get; set; }
         public FieldChoices Fields { get; set; }
+        public Page Page { get; set; }
         public List<StatusChoices> Status { get; set; }
         public Tuple<StatusChoices, DateTime, DateTime> TimeFrame;
     }
