@@ -23,18 +23,18 @@ namespace OpenPermit.SQL
         public string postalCode { get; set; }
     }
 
-    public class SQLOpenPermitAdpater: IOpenPermitAdapter
+    public class SQLOpenPermitAdapter: IOpenPermitAdapter
     {
         private string connectionString;
         private string provider = "System.Data.SqlClient";
 
-        public SQLOpenPermitAdpater()
+        public SQLOpenPermitAdapter()
         {
             //db = new Database("openpermit");
             connectionString = ConfigurationManager.AppSettings.Get("OP.Agency.Connection");
         }
 
-        public SQLOpenPermitAdpater(OpenPermitContext context)
+        public SQLOpenPermitAdapter(OpenPermitContext context)
         {
             connectionString = context.Agency.ConnectionString;
         }

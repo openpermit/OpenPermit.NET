@@ -19,6 +19,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenPermit.SQL.Tests", "Src
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenPermit.SQL.Sync", "Samples\OpenPermit.SQL.Sync\OpenPermit.SQL.Sync.csproj", "{BA443584-8A53-4C63-BFCD-099406DF0CC4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenPermit.Socrata", "Src\OpenPermit.Socrata\OpenPermit.Socrata.csproj", "{425C0C35-120C-4673-83F1-163AB085C03E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenPermit.Socrata.Tests", "Src\OpenPermit.Socrata.Tests\OpenPermit.Socrata.Tests.csproj", "{24368E87-D4F6-43A2-AFEB-3EE2C7A3AB6B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +61,14 @@ Global
 		{BA443584-8A53-4C63-BFCD-099406DF0CC4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BA443584-8A53-4C63-BFCD-099406DF0CC4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BA443584-8A53-4C63-BFCD-099406DF0CC4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{425C0C35-120C-4673-83F1-163AB085C03E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{425C0C35-120C-4673-83F1-163AB085C03E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{425C0C35-120C-4673-83F1-163AB085C03E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{425C0C35-120C-4673-83F1-163AB085C03E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{24368E87-D4F6-43A2-AFEB-3EE2C7A3AB6B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{24368E87-D4F6-43A2-AFEB-3EE2C7A3AB6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{24368E87-D4F6-43A2-AFEB-3EE2C7A3AB6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{24368E87-D4F6-43A2-AFEB-3EE2C7A3AB6B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

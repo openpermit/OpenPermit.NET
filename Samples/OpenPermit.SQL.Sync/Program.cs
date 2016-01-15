@@ -372,7 +372,7 @@ namespace OpenPermit.MDC.Sync
             HashSet<string> closedPermits = new HashSet<string>();
             HashSet<string> openedPermits = new HashSet<string>();
 
-            IOpenPermitAdapter adapter = new SQLOpenPermitAdpater();
+            IOpenPermitAdapter adapter = new SQLOpenPermitAdapter();
 
             List<Permit> knownPermits = adapter.SearchPermits(new PermitFilter());
 
