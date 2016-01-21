@@ -2,10 +2,9 @@
 using System.Linq;
 using System.Runtime.Serialization;
 
-
 namespace OpenPermit
 {
-    class EnumUtils
+    public class EnumUtils
     {
         public static string ToEnumString<T>(T type)
         {
@@ -21,9 +20,13 @@ namespace OpenPermit
             foreach (var name in Enum.GetNames(enumType))
             {
                 var enumMemberAttribute = ((EnumMemberAttribute[])enumType.GetField(name).GetCustomAttributes(typeof(EnumMemberAttribute), true)).Single();
-                if (enumMemberAttribute.Value == str) return (T)Enum.Parse(enumType, name);
+                if (enumMemberAttribute.Value == str)
+                {
+                    return (T)Enum.Parse(enumType, name);
+                }
             }
-            //throw exception or whatever handling you want or
+
+            // throw exception or whatever handling you want or
             return default(T);
         }
 

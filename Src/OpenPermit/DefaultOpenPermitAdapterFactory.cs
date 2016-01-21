@@ -1,12 +1,12 @@
 ﻿using System;
-using System.IO;
-using System.Web;
 using System.Collections.Generic;
 using System.Configuration;
+using System.IO;
+using System.Web;
 
 namespace OpenPermit
 {
-    class DefaultOpenPermitAdapterFactory : IOpenPermitAdapterFactory
+    internal class DefaultOpenPermitAdapterFactory : IOpenPermitAdapterFactory
     {
         private OpenPermitAgency agency;
         private Type adapterType;
@@ -20,9 +20,9 @@ namespace OpenPermit
                 throw new ConfigurationErrorsException("OP.Agency.Name is a required configuration setting.");
             }
 
-            agency = new OpenPermitAgency
+            this.agency = new OpenPermitAgency
             {
-                Id = ((ConfigurationManager.AppSettings["OP.Agency.Id"] != null) ? ConfigurationManager.AppSettings["OP.Agency.Id"] : ""),
+                Id = (ConfigurationManager.AppSettings["OP.Agency.Id"] != null) ? ConfigurationManager.AppSettings["OP.Agency.Id"] : string.Empty,
                 Name = ConfigurationManager.AppSettings["OP.Agency.Name"],
                 ConnectionString = ConfigurationManager.AppSettings["OP.Agency.Connection"]
             };
@@ -30,7 +30,7 @@ namespace OpenPermit
             string agencyConfig = Path.Combine(HttpContext.Current.Server.MapPath("/"), "agency.config");
             if (File.Exists(agencyConfig))
             {
-                agency.Configuration = File.ReadAllText(agencyConfig);
+                this.agency.Configuration = File.ReadAllText(agencyConfig);
             }
 
             string adapterTypeName = ConfigurationManager.AppSettings["OP.Agency.Adapter"];
@@ -39,12 +39,13 @@ namespace OpenPermit
                 throw new ConfigurationErrorsException("OP.Agency.Adapter is a required configuration setting.");
             }
 
-            adapterType = Type.GetType(adapterTypeName);
-            if (adapterType == null)
+            this.adapterType = Type.GetType(adapterTypeName);
+            if (this.adapterType == null)
             {
                 throw new ArgumentException("OP.Agency.Adapter could not be loaded.");
             }
-            if(!typeof(IOpenPermitAdapter).IsAssignableFrom(adapterType))
+
+            if (!typeof(IOpenPermitAdapter).IsAssignableFrom(this.adapterType))
             {
                 throw new ArgumentException("OP.Agency.Adapter is invalid, must implement IOpenPermitAdapter.");
             }
@@ -56,8 +57,9 @@ namespace OpenPermit
             {
                 context = new OpenPermitContext();
             }
-            context.Agency = agency;
-            var adapter = (IOpenPermitAdapter)Activator.CreateInstance(adapterType, new object[] {context});
+
+            context.Agency = this.agency;
+            var adapter = (IOpenPermitAdapter)Activator.CreateInstance(this.adapterType, new object[] { context });
             return adapter;
         }
     }

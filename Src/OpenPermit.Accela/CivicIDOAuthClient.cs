@@ -1,16 +1,17 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System;
-using System.IO;
+﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Web;
-using System.Runtime.Serialization;
 
 using DotNetOpenAuth.AspNet;
 using DotNetOpenAuth.AspNet.Clients;
+
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace OpenPermit.Accela
 {
@@ -78,18 +79,18 @@ namespace OpenPermit.Accela
 
     public class CivicIDOAuthClient : OAuth2Client
     {
-        private string _profileScope = "";
+        private const int ApiVersion = 3;
+        private const string AuthorizationEndPoint = "https://auth.accela.com/oauth2/authorize"; // e.g. "https://auth.accela.com/oauth2/authorize"
+        private const string TokenEndPoint = "https://apis.accela.com/oauth2/token"; // e.g. "https://apis.accela.com/oauth2/token"
+        private const string UserProfileEndPoint = "https://apis.accela.com/v3/users/me"; // e.g. "https://apis.accela.com/v3/users/me"
 
-        private const int apiVersion = 3;
-        private const string AuthorizationEndPoint = "https://auth.accela.com/oauth2/authorize"; //e.g. "https://auth.accela.com/oauth2/authorize"
-        private const string TokenEndPoint = "https://apis.accela.com/oauth2/token"; //e.g. "https://apis.accela.com/oauth2/token"
-        private const string UserProfileEndPoint = "https://apis.accela.com/v3/users/me"; //e.g. "https://apis.accela.com/v3/users/me"
-
-        private string agencyName;
-        private string environment;
         private readonly string appId;
         private readonly string appSecret;
         private readonly string scope;
+
+        private string profileScope = string.Empty;
+        private string agencyName;
+        private string environment;
 
         public CivicIDOAuthClient()
             : base("Civic ID")
@@ -97,7 +98,7 @@ namespace OpenPermit.Accela
         }
 
         public CivicIDOAuthClient(string appId, string appSecret)
-            : this(appId, appSecret, (apiVersion == 3 ? "get_user_profile" : "get_my_profile"), "TEST")
+            : this(appId, appSecret, (ApiVersion == 3) ? "get_user_profile" : "get_my_profile", "TEST")
         {   
         }
 
@@ -115,10 +116,9 @@ namespace OpenPermit.Accela
                 throw new ArgumentNullException("Application secret is required");
             }
 
-            //Requires.NotNullOrEmpty(appId, "appId");
-            //Requires.NotNullOrEmpty(appSecret, "appSecret");
-            //Requires.NotNullOrEmpty(scope, "scope");
-
+            // Requires.NotNullOrEmpty(appId, "appId");
+            // Requires.NotNullOrEmpty(appSecret, "appSecret");
+            // Requires.NotNullOrEmpty(scope, "scope");
             this.appId = appId;
             this.appSecret = appSecret;
             this.environment = environment;
@@ -127,14 +127,14 @@ namespace OpenPermit.Accela
 
         public string Environment
         {
-            get { return environment; }
-            set { environment = value; }
+            get { return this.environment; }
+            set { this.environment = value; }
         }
 
         public string AgencyName
         {
-            get { return agencyName; }
-            set { agencyName = value; }
+            get { return this.agencyName; }
+            set { this.agencyName = value; }
         }
 
         public AccessToken QueryAccessToken(string userName, string password)
@@ -160,17 +160,17 @@ namespace OpenPermit.Accela
             tokenRequest.ContentType = "application/x-www-form-urlencoded";
             tokenRequest.ContentLength = query.Length;
             tokenRequest.Method = "POST";
-            //set headers
+            
+            // set headers
             tokenRequest.Headers.Add("x-accela-appid", this.appId);
 
-            var response = SendPOSTRequest<AccessToken>(tokenRequest, query);
+            var response = this.SendPOSTRequest<AccessToken>(tokenRequest, query);
             return response;
         }
 
         public AuthenticationResult AuthenticateWithPassword(string userName, string password)
         {
-            
-            var accessToken = QueryAccessToken(userName, password);
+            var accessToken = this.QueryAccessToken(userName, password);
 
             IDictionary<string, string> userData = this.GetUserData(accessToken.Token);
             if (userData == null)
@@ -192,7 +192,11 @@ namespace OpenPermit.Accela
             userData["accesstoken"] = accessToken.Token;
 
             return new AuthenticationResult(
-				isSuccessful: true, provider: this.ProviderName, providerUserId: id, userName: userName, extraData: userData);
+                                             isSuccessful: true, 
+                                             provider: this.ProviderName, 
+                                             providerUserId: id, 
+                                             userName: userName, 
+                                             extraData: userData);
         }
 
         /// <summary>
@@ -233,7 +237,7 @@ namespace OpenPermit.Accela
 
             using (var client = new WebClient())
             {
-                //set headers
+                // set headers
                 client.Headers[HttpRequestHeader.ContentType] = "application/json; charset=utf-8;";
                 client.Headers[HttpRequestHeader.Accept] = "application/json";
                 client.Headers[HttpRequestHeader.Authorization] = accessToken;
@@ -242,15 +246,21 @@ namespace OpenPermit.Accela
                 var responseBody = client.DownloadString(UserProfileEndPoint);
                 var json = JObject.Parse(responseBody);
 
-                if (json["result"] != null) // v4
+                if (json["result"] != null) 
+                {
+                    // v4
                     civicUser = json["result"].ToObject<User>();
-                else // v3
+                }
+                else 
+                {
+                    // v3
                     civicUser = JsonConvert.DeserializeObject<User>(responseBody);
+                }
             }
 
             var userData = new Dictionary<string, string>();
 
-            //Fill the Dictionary with user's data. This will be available through ExtraData Dictionary of the DotNetOpenAuth.AspNet.AuthenticationResult instance
+            // Fill the Dictionary with user's data. This will be available through ExtraData Dictionary of the DotNetOpenAuth.AspNet.AuthenticationResult instance
             if (civicUser != null)
             {
                 var login = !string.IsNullOrWhiteSpace(civicUser.LoginName) ? civicUser.LoginName : civicUser.Id.ToLower();
@@ -302,13 +312,16 @@ namespace OpenPermit.Accela
             tokenRequest.ContentType = "application/x-www-form-urlencoded";
             tokenRequest.ContentLength = query.Length;
             tokenRequest.Method = "POST";
-            //set headers
+            
+            // set headers
             tokenRequest.Headers.Add("x-accela-appid", this.appId);
 
-            var response = SendPOSTRequest<AccessToken>(tokenRequest, query);
+            var response = this.SendPOSTRequest<AccessToken>(tokenRequest, query);
 
             if (response != null)
+            {
                 return response.Token;
+            }
 
             return null;
         }
