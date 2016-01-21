@@ -12,8 +12,8 @@ namespace OpenPermit.Socrata.Tests
         {
             IOpenPermitAdapter adapter = new SocrataOpenPermitAdapter();
             Page page = new Page();
-            page.offset = 0;
-            page.limmit = 10;
+            page.Offset = 0;
+            page.Limmit = 10;
             PermitFilter filter = new PermitFilter();
             filter.Page = page;
             List<Permit> permits = adapter.SearchPermits(filter);

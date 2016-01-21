@@ -1,16 +1,16 @@
 ﻿using System;
-using System.IO;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Configuration;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
-using System.Web.Http;
-using System.Collections.Specialized;
 using System.Web;
-using System.Configuration;
-using System.Net.Http.Headers;
+using System.Web.Http;
 using System.Web.Http.Cors;
 
 using Newtonsoft.Json;
@@ -25,7 +25,154 @@ namespace OpenPermit
     [UnhandledExceptionFilter]
     public class OpenPermitController : ApiController
     {
-        public IOpenPermitAdapter Adapter { get; set; }
+        public IOpenPermitAdapter Adapter { get; set; }        
+
+        /// <summary>
+        /// Implements OpenPermit Specification "GET permits" endpoint
+        /// </summary>
+        /// <param name="number">Permit number</param>
+        /// <param name="address">Address of the location where to retrieve permits</param>
+        /// <param name="bbox">
+        ///     Replaced with the bounding box to search for geospatial results within. The box is defined by "west, south, east, north" coordinates
+        ///     of longitude, latitude, in a EPSG:4326 decimal degrees. This is also commonly referred to by minX, minY, maxX, maxY (where longitude
+        ///     is the X-axis, and latitude is the Y-axis), or also SouthWest corner and NorthEast corner.
+        /// </param>
+        /// <returns>
+        ///     List of permits in BLDS format.
+        ///     
+        ///     Note: This endpoint GeoJSON reponses.
+        /// </returns>
+        [Route]
+        public HttpResponseMessage GetPermits(
+                                              string number = null, 
+                                              string address = null, 
+                                              string bbox = null,
+                                              string types = null,
+                                              string fields = "all",
+                                              string status = null,
+                                              string date = null,
+                                              string from = null,
+                                              string to = null)
+        {
+            var filter = new PermitFilter();
+            if (this.TryPopulatePermitFilter(out filter, number, address, bbox, types, fields, status, date, from, to))
+            {
+                List<Permit> permits = this.Adapter.SearchPermits(filter);
+
+                if (permits != null)
+                {
+                    // TODO perhaps do this GeoJSON support as a filter?
+                    IEnumerable<string> acceptHeader;
+                    if (Request.Headers.TryGetValues("Accept", out acceptHeader) && acceptHeader.FirstOrDefault() == "application/vnd.geo+json")
+                    {
+                        var response = Request.CreateResponse(HttpStatusCode.OK);
+                        response.Content = this.ToGeoJsonStream(permits, filter.Fields);
+                        response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/vnd.geo+json");
+                        return response;
+                    }
+
+                    return Request.CreateResponse<List<Permit>>(permits);
+                }
+                else
+                {
+                    return Request.CreateResponse(HttpStatusCode.NotFound);
+                }
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.BadRequest);
+            }
+        }
+
+        [Route("{number}")]
+        public HttpResponseMessage GetPermit(string number, string options = null)
+        {
+            Permit permit = this.Adapter.GetPermit(number);
+
+            if (permit.PermitNum != null)
+            {
+                return Request.CreateResponse<Permit>(permit);
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.NotFound);
+            }
+        }
+
+        [Route("{number}/timeline")]
+        public HttpResponseMessage GetPermitTimeline(string number, string options = null)
+        {
+            List<PermitStatus> timeline = this.Adapter.GetPermitTimeline(number);
+
+            if (timeline != null)
+            {
+                return Request.CreateResponse<List<PermitStatus>>(timeline);
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.NotFound);
+            }
+        }
+
+        [Route("{number}/inspections")]
+        public HttpResponseMessage GetInspections(string number, string options = null)
+        {
+            List<Inspection> inspections = this.Adapter.GetInspections(number);
+
+            if (inspections != null)
+            {
+                return Request.CreateResponse<List<Inspection>>(inspections);
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.NotFound);
+            }
+        }
+
+        [Route("{number}/inspections/{inspectionId}")]
+        public HttpResponseMessage GetInspection(string number, string inspectionId, string options = null)
+        {
+            Inspection inspection = this.Adapter.GetInspection(number, inspectionId);
+
+            if (inspection != null)
+            {
+                return Request.CreateResponse<Inspection>(inspection);
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.NotFound);
+            }
+        }
+
+        [Route("{number}/contractors")]
+        public HttpResponseMessage GetContractors(string number, string options = null)
+        {
+            List<Contractor> contractors = this.Adapter.GetContractors(number);
+
+            if (contractors != null)
+            {
+                return Request.CreateResponse<List<Contractor>>(contractors);
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.NotFound);
+            }
+        }
+
+        [Route("{number}/contractors/{contractorId}")]
+        public HttpResponseMessage GetContractor(string number, string contractorId, string options = null)
+        {
+            Contractor contractor = this.Adapter.GetContractor(number, contractorId);
+
+            if (contractor != null)
+            {
+                return Request.CreateResponse<Contractor>(contractor);
+            }
+            else
+            {
+                return Request.CreateResponse(HttpStatusCode.NotFound);
+            }
+        }
 
         private PushStreamContent ToGeoJsonStream(List<Permit> permits, FieldChoices choice)
         {
@@ -40,7 +187,7 @@ namespace OpenPermit
                     jsonWriter.WriteValue("FeatureCollection");
                     jsonWriter.WritePropertyName("features");
                     jsonWriter.WriteStartArray();
-                    
+
                     foreach (var permit in permits)
                     {
                         jsonWriter.WriteStartObject();
@@ -59,7 +206,7 @@ namespace OpenPermit
                         jsonWriter.WriteEndArray();
                         jsonWriter.WriteEndObject();
 
-                        if((choice & FieldChoices.Recommended) > 0)
+                        if ((choice & FieldChoices.Recommended) > 0)
                         {
                             // TODO Serialize required fields
                         }
@@ -76,6 +223,7 @@ namespace OpenPermit
 
                         jsonWriter.WriteEndObject();
                     }
+
                     jsonWriter.WriteEndArray();
                     jsonWriter.WriteEndObject();
                     jsonWriter.Flush();
@@ -85,9 +233,10 @@ namespace OpenPermit
             return geoJsonContent;
         }
 
-        private bool TryPopulatePermitFilter(out PermitFilter filter,
-                                             string number, 
-                                             string address, 
+        private bool TryPopulatePermitFilter(
+                                             out PermitFilter filter,
+                                             string number,
+                                             string address,
                                              string bbox,
                                              string types,
                                              string fields,
@@ -103,27 +252,30 @@ namespace OpenPermit
             };
 
             // Bounding box search follows OpenSearch Geo Extensions (see: http://www.opensearch.org/ look under Geo extensions)
-            if(bbox != null)
+            if (bbox != null)
             {
                 string[] coordinates = bbox.Split(',');
-                if(coordinates.Length != 4)
+                if (coordinates.Length != 4)
                 {
                     return false;
                 }
 
                 double xMin, yMin, xMax, yMax;
-                if(!double.TryParse(coordinates[0], out xMin))
+                if (!double.TryParse(coordinates[0], out xMin))
                 {
                     return false;
                 }
+
                 if (!double.TryParse(coordinates[1], out yMin))
                 {
                     return false;
                 }
+
                 if (!double.TryParse(coordinates[2], out xMax))
                 {
                     return false;
                 }
+
                 if (!double.TryParse(coordinates[3], out yMax))
                 {
                     return false;
@@ -138,7 +290,7 @@ namespace OpenPermit
                 };
             }
 
-            switch(fields.ToLower())
+            switch (fields.ToLower())
             {
                 case "geo":
                     filter.Fields = FieldChoices.Geo;
@@ -154,22 +306,22 @@ namespace OpenPermit
                     break;
             }
 
-            if(types != null)
+            if (types != null)
             {
                 string[] typesArray = types.Split(',');
                 var choices = new List<TypeChoices>();
-                foreach(string type in typesArray)
+                foreach (string type in typesArray)
                 {
                     TypeChoices choice;
-                    if(Enum.TryParse<TypeChoices>(type, true, out choice))
+                    if (Enum.TryParse<TypeChoices>(type, true, out choice))
                     {
                         choices.Add(choice);
                     }
-                    
-                    //TODO Ignoring bad inputs, should we return an error?
+
+                    // TODO Ignoring bad inputs, should we return an error?
                 }
-                
-                if(choices.Count > 0)
+
+                if (choices.Count > 0)
                 {
                     filter.Types = choices;
                 }
@@ -197,169 +349,23 @@ namespace OpenPermit
             if (startDate != null)
             {
                 StatusChoices choice = StatusChoices.Applied;
-                DateTime eDate = DateTime.Now;
-                DateTime sDate = Convert.ToDateTime(startDate);
+                DateTime endDateTime = DateTime.Now;
+                DateTime startDateTime = Convert.ToDateTime(startDate);
 
                 if (dateType != null)
+                {
                     Enum.TryParse<StatusChoices>(dateType, true, out choice);
+                }
 
                 if (endDate != null)
-                    eDate = Convert.ToDateTime(endDate);
+                {
+                    endDateTime = Convert.ToDateTime(endDate);
+                }
 
-                filter.TimeFrame = new Tuple<StatusChoices, DateTime, DateTime>(choice, sDate, eDate);
+                filter.TimeFrame = new Tuple<StatusChoices, DateTime, DateTime>(choice, startDateTime, endDateTime);
             }
 
             return true;
-        }
-
-        
-
-        /// <summary>
-        /// Implements OpenPermit Specification "GET permits" endpoint
-        /// </summary>
-        /// <param name="number">Permit number</param>
-        /// <param name="address">Address of the location where to retrieve permits</param>
-        /// <param name="bbox">
-        ///     Replaced with the bounding box to search for geospatial results within. The box is defined by "west, south, east, north" coordinates
-        ///     of longitude, latitude, in a EPSG:4326 decimal degrees. This is also commonly referred to by minX, minY, maxX, maxY (where longitude
-        ///     is the X-axis, and latitude is the Y-axis), or also SouthWest corner and NorthEast corner.
-        /// </param>
-        /// <returns>
-        ///     List of permits in BLDS format.
-        ///     
-        ///     Note: This endpoint GeoJSON reponses.
-        /// </returns>
-        [Route]
-        public HttpResponseMessage GetPermits(string number = null, 
-                                              string address = null, 
-                                              string bbox = null,
-                                              string types = null,
-                                              string fields = "all",
-                                              string status = null,
-                                              string date = null,
-                                              string from = null,
-                                              string to = null)
-        {
-
-            var filter = new PermitFilter();
-            if (TryPopulatePermitFilter(out filter, number, address, bbox, types, fields, status, date, 
-                from, to))
-            {
-                List<Permit> permits = Adapter.SearchPermits(filter);
-
-                if (permits != null)
-                {
-                    // TODO perhaps do this GeoJSON support as a filter?
-                    IEnumerable<string> acceptHeader;
-                    if (Request.Headers.TryGetValues("Accept", out acceptHeader) && acceptHeader.FirstOrDefault() == "application/vnd.geo+json")
-                    {
-                        var response = Request.CreateResponse(HttpStatusCode.OK);
-                        response.Content = ToGeoJsonStream(permits, filter.Fields);
-                        response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/vnd.geo+json");
-                        return response;
-                    }
-
-                    return Request.CreateResponse<List<Permit>>(permits);
-                }
-                else
-                {
-                    return Request.CreateResponse(HttpStatusCode.NotFound);
-                }
-            }
-            else
-            {
-                return Request.CreateResponse(HttpStatusCode.BadRequest);
-            }
-        }
-
-        [Route("{number}")]
-        public HttpResponseMessage GetPermit(string number, string options = null)
-        {
-            Permit permit = Adapter.GetPermit(number);
-
-            if (permit.PermitNum != null)
-            {
-                return Request.CreateResponse<Permit>(permit);
-            }
-            else
-            {
-                return Request.CreateResponse(HttpStatusCode.NotFound);
-            }
-        }
-
-        [Route("{number}/timeline")]
-        public HttpResponseMessage GetPermitTimeline(string number, string options = null)
-        {
-            List<PermitStatus> timeline = Adapter.GetPermitTimeline(number);
-
-            if (timeline != null)
-            {
-                return Request.CreateResponse<List<PermitStatus>>(timeline);
-            }
-            else
-            {
-                return Request.CreateResponse(HttpStatusCode.NotFound);
-            }
-        }
-
-        [Route("{number}/inspections")]
-        public HttpResponseMessage GetInspections(string number, string options = null)
-        {
-            List<Inspection> inspections = Adapter.GetInspections(number);
-
-            if (inspections != null)
-            {
-                return Request.CreateResponse<List<Inspection>>(inspections);
-            }
-            else
-            {
-                return Request.CreateResponse(HttpStatusCode.NotFound);
-            }
-        }
-
-        [Route("{number}/inspections/{inspectionId}")]
-        public HttpResponseMessage GetInspection(string number, string inspectionId, string options = null)
-        {
-            Inspection inspection = Adapter.GetInspection(number, inspectionId);
-
-            if (inspection != null)
-            {
-                return Request.CreateResponse<Inspection>(inspection);
-            }
-            else
-            {
-                return Request.CreateResponse(HttpStatusCode.NotFound);
-            }
-        }
-
-        [Route("{number}/contractors")]
-        public HttpResponseMessage GetContractors(string number, string options = null)
-        {
-            List<Contractor> contractors = Adapter.GetContractors(number);
-
-            if (contractors != null)
-            {
-                return Request.CreateResponse<List<Contractor>>(contractors);
-            }
-            else
-            {
-                return Request.CreateResponse(HttpStatusCode.NotFound);
-            }
-        }
-
-        [Route("{number}/contractors/{contractorId}")]
-        public HttpResponseMessage GetContractor(string number, string contractorId, string options = null)
-        {
-            Contractor contractor = Adapter.GetContractor(number, contractorId);
-
-            if (contractor != null)
-            {
-                return Request.CreateResponse<Contractor>(contractor);
-            }
-            else
-            {
-                return Request.CreateResponse(HttpStatusCode.NotFound);
-            }
         }
     }
 }

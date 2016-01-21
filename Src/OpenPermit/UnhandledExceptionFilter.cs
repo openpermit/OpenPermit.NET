@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
-using System.Text;
-using System.Diagnostics;
-
 using System.Net.Http;
+using System.Text;
 using System.Web.Http.Filters;
 
 namespace OpenPermit
@@ -16,7 +15,6 @@ namespace OpenPermit
         {
             HttpStatusCode status = HttpStatusCode.InternalServerError;
             var exception = context.Exception;
-
 
             Trace.TraceError("Message: {0} Stack: {1}", exception.Message, exception.StackTrace);
 
