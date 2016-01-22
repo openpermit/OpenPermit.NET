@@ -9,6 +9,34 @@ namespace OpenPermit
         public string StatusMapped { get; set; }
     }
 
+    public struct PermitTypeMapping
+    {
+        public string PermitType { get; set; }
+
+        public string PermitTypeMapped { get; set; }
+    }
+
+    public struct PermitClassMapping
+    {
+        public string PermitClass { get; set; }
+
+        public string PermitClassMapped { get; set; }
+    }
+
+    public struct WorkClassMapping
+    {
+        public string WorkClass { get; set; }
+
+        public string WorkClassMapped { get; set; }
+    }
+
+    public struct ContractorTradeMapping
+    {
+        public string ContractorTrade { get; set; }
+
+        public string ContractorTradeMapped { get; set; }
+    }
+
     public struct TimelineMapping
     {
         public string StatusPreviousMapped { get; set; }
