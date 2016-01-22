@@ -176,6 +176,11 @@ namespace OpenPermit.SQL
                     return null;
                 }
 
+                string addressLine = addr.addressLine;
+                string city = addr.locality;
+                string state = addr.adminDistrict;
+                string zip = addr.postalCode;
+
                 using (var db = new Database(this.connectionString, this.provider))
                 {
                     string queryText = "SELECT {0} FROM Permit WHERE {1} OriginalAddress1=@0 AND " +
@@ -183,10 +188,10 @@ namespace OpenPermit.SQL
                     queryText = string.Format(queryText, fields, conditions);
                     return db.Fetch<Permit>(
                                              queryText, 
-                                             addr.addressLine, 
-                                             addr.locality,
-                                             addr.adminDistrict, 
-                                             addr.postalCode);
+                                             addressLine, 
+                                             city,
+                                             state, 
+                                             zip);
                 }
             }
             else if (filter.BoundingBox != null)

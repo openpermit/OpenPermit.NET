@@ -196,30 +196,155 @@ namespace OpenPermit.Accela
             };
         }
 
-        private Permit ToPermit(Record record)
+        private void PopulateRequiredFields(Record record, Permit permit)
         {
-            Permit permit = new Permit
-            {
-                PermitNum = record.customId,
-                Fee = record.totalFee,
-                ProjectName = record.name,
-                EstProjectCost = record.estimatedTotalJobCost,
+            permit.PermitNum = record.customId;
+            permit.Description = record.description;
 
-                Jurisdiction = this.context.Agency.Id,
-                Publisher = this.context.Agency.Name
-            };
-
-            if (record.type != null)
+            if (record.firstIssuedDate != null)
             {
-                permit.PermitType = record.type.group;
-                permit.PermitTypeDesc = record.type.text;
-                permit.PermitClass = record.type.type;
-                permit.WorkClass = record.type.subType;
+                permit.IssuedDate = DateTime.Parse(record.firstIssuedDate);
+            }
+            else
+            {
+                // TODO Try to get from workflow, but this would require an API call, investigate what we can do... 
+            }
+
+            if (record.openedDate != null)
+            {
+                permit.AppliedDate = DateTime.Parse(record.openedDate);
             }
 
             if (record.completeDate != null)
             {
                 permit.CompletedDate = DateTime.Parse(record.completedDate);
+            }
+            else if (
+                     record.status != null &&
+                     record.statusDate != null &&
+                     (record.status.text == "Finaled" || record.status.text == "Completed"))
+            {
+                permit.CompletedDate = DateTime.Parse(record.statusDate);
+            }
+
+            // Populate address portion of the permit
+            if (record.addresses != null && record.addresses.Count > 0)
+            {
+                Address primaryAddress = null;
+                if (record.addresses.Count > 1)
+                {
+                    foreach (Address address in record.addresses)
+                    {
+                        if (address.isPrimary == "Y")
+                        {
+                            primaryAddress = address;
+                            break;
+                        }
+                    }
+                }
+
+                if (primaryAddress == null)
+                {
+                    primaryAddress = record.addresses.FirstOrDefault<Address>();
+                }
+
+                StringBuilder originalBuilder = new StringBuilder();
+                if (primaryAddress.streetStart != 0)
+                {
+                    originalBuilder.Append(primaryAddress.streetStart);
+                }
+
+                if (primaryAddress.streetPrefix != null)
+                {
+                    originalBuilder.Append(" ");
+                    originalBuilder.Append(primaryAddress.streetPrefix);
+                }
+
+                if (primaryAddress.streetName != null)
+                {
+                    originalBuilder.Append(" ");
+                    originalBuilder.Append(primaryAddress.streetName);
+                }
+
+                if (primaryAddress.streetSuffix != null)
+                {
+                    originalBuilder.Append(" ");
+                    originalBuilder.Append(primaryAddress.streetSuffix.text);
+                }
+
+                permit.OriginalAddress1 = originalBuilder.ToString();
+                permit.OriginalCity = primaryAddress.city;
+                permit.OriginalState = (primaryAddress.state != null) ? primaryAddress.state.text : string.Empty;
+                permit.OriginalZip = primaryAddress.postalCode;
+
+                // TODO Most likely will need to geocode on the fly here as agencies do not store lat, lon (Seth Axthelm)
+                permit.Longitude = primaryAddress.xCoordinate;
+                permit.Latitude = primaryAddress.yCoordinate;
+            }
+        }
+
+        private void PopulateRecommendedFields(Record record, Permit permit)
+        {
+            if (record.type != null)
+            {
+                permit.PermitType = record.type.text;
+                permit.PermitTypeDesc = record.type.text;
+
+                if (this.config.PermitType != null)
+                {
+                    var mapping = this.config.PermitType.SingleOrDefault<PermitTypeMapping>(m => m.PermitType == permit.PermitType);
+                    if (mapping.PermitType != null)
+                    {
+                        permit.PermitTypeMapped = mapping.PermitTypeMapped;
+                    }
+                }
+
+                // TODO Look into possibility of PermitClass coming from ASI field/custom Form (Seth Axthelm)
+                switch (this.config.PermitClassField)
+                {
+                    case PermitClassField.RecordType:
+                        permit.PermitClass = record.type.type;
+                        break;
+                    case PermitClassField.RecordSubType:
+                        permit.PermitClass = record.type.subType;
+                        break;
+                }
+
+                if (this.config.PermitClass != null)
+                {
+                    var mapping = this.config.PermitClass.SingleOrDefault<PermitClassMapping>(m => m.PermitClass == permit.PermitClass);
+                    if (mapping.PermitClass != null)
+                    {
+                        permit.PermitClassMapped = mapping.PermitClassMapped;
+                    }
+                }
+
+                // TODO Look into possibility of WorkClass coming from ASI field/custom Form (Seth Axthelm)
+                switch (this.config.WorkClassField)
+                {
+                    case WorkClassField.RecordType:
+                        permit.WorkClass = record.type.type;
+                        break;
+                    case WorkClassField.RecordSubType:
+                        permit.WorkClass = record.type.subType;
+                        break;
+                    case WorkClassField.ConstructType:
+                        if (record.constructionType != null)
+                        {
+                            permit.WorkClass = record.constructionType.text;
+                        }
+
+                        break;
+                }
+
+                if (this.config.WorkClass != null)
+                {
+                    var mapping = this.config.WorkClass.SingleOrDefault<WorkClassMapping>(m => m.WorkClass == permit.WorkClass);
+                    if (mapping.WorkClass != null)
+                    {
+                        permit.WorkClassMapped = mapping.WorkClassMapped;
+                    }
+                }
             }
 
             if (record.status != null)
@@ -228,7 +353,7 @@ namespace OpenPermit.Accela
 
                 if (this.config.Status != null)
                 {
-                    var mapping = this.config.Status.SingleOrDefault<StatusMapping>(m => m.Status == record.status.text);
+                    var mapping = this.config.Status.SingleOrDefault<StatusMapping>(m => m.Status == permit.StatusCurrent);
                     if (mapping.Status != null)
                     {
                         permit.StatusCurrentMapped = mapping.StatusMapped;
@@ -236,43 +361,113 @@ namespace OpenPermit.Accela
                 }
             }
 
-            if (record.addresses != null)
+            // TODO This could be an ASI field (Seth Axthelm)
+            permit.HousingUnits = record.housingUnits;
+
+            // TODO TotalSqft, this is an ASI field (Seth Axthelm)
+            if (record.parcels != null && record.parcels.Count > 0)
             {
-                Address address = record.addresses.FirstOrDefault<Address>();
-
-                if (address != null)
+                Parcel primaryParcel = null;
+                if (record.parcels.Count > 1)
                 {
-                    StringBuilder originalBuilder = new StringBuilder();
-                    if (address.streetStart != 0)
+                    foreach (Parcel parcel in record.parcels)
                     {
-                        originalBuilder.Append(address.streetStart);
+                        if (parcel.isPrimary == "Y")
+                        {
+                            primaryParcel = parcel;
+                            break;
+                        }
                     }
-
-                    if (address.streetPrefix != null)
-                    {
-                        originalBuilder.Append(" ");
-                        originalBuilder.Append(address.streetPrefix);
-                    }
-
-                    if (address.streetName != null)
-                    {
-                        originalBuilder.Append(" ");
-                        originalBuilder.Append(address.streetName);
-                    }
-
-                    if (address.streetSuffix != null)
-                    {
-                        originalBuilder.Append(" ");
-                        originalBuilder.Append(address.streetSuffix.text);
-                    }
-
-                    permit.OriginalAddress1 = originalBuilder.ToString();
-                    permit.OriginalCity = address.city;
-                    permit.OriginalState = (address.state != null) ? address.state.text : string.Empty;
-                    permit.OriginalZip = address.postalCode;
                 }
+
+                if (primaryParcel == null)
+                {
+                    primaryParcel = record.parcels.FirstOrDefault<Parcel>();
+                }
+
+                permit.PIN = primaryParcel.parcelNumber;
             }
 
+            if (record.professionals != null && record.professionals.Count > 0)
+            {
+                Professional primaryContractor = null;
+                if (record.professionals.Count > 1)
+                {
+                    foreach (Professional professional in record.professionals)
+                    {
+                        if (professional.isPrimary == "Y")
+                        {
+                            primaryContractor = professional;
+                            break;
+                        }
+                    }
+                }
+
+                if (primaryContractor == null)
+                {
+                    primaryContractor = record.professionals.FirstOrDefault<Professional>();
+                }
+
+                permit.ContractorCompanyName = primaryContractor.businessName;
+                permit.ContractorLicNum = primaryContractor.licenseNumber;
+                permit.ContractorStateLic = (primaryContractor.licensingBoard != null) ? primaryContractor.licensingBoard.text : null;
+                permit.ContractorTrade = (primaryContractor.licenseType != null) ? primaryContractor.licenseType.text : null;
+
+                if (permit.ContractorTrade != null)
+                {
+                    if (this.config.ContractorTrade != null)
+                    {
+                        var mapping = this.config.ContractorTrade.SingleOrDefault<ContractorTradeMapping>(
+                            m => m.ContractorTrade == permit.ContractorTrade);
+                        if (mapping.ContractorTrade != null)
+                        {
+                            permit.ContractorTradeMapped = mapping.ContractorTradeMapped;
+                        }
+                    }
+                }
+
+                // TODO These are optional, perhaps move to different method
+                permit.ContractorFullName = (primaryContractor.fullName != null) ? primaryContractor.fullName :
+                    primaryContractor.firstName + " " + primaryContractor.lastName;
+                permit.ContractorAddress1 = primaryContractor.address1;
+                permit.ContractorAddress2 = primaryContractor.address2;
+                permit.ContractorCity = primaryContractor.city;
+                permit.ContractorState = (primaryContractor.state != null) ? primaryContractor.state.text : null;
+                permit.ContractorZip = primaryContractor.postalCode;
+                permit.ContractorEmail = primaryContractor.email;
+                permit.ContractorPhone = primaryContractor.phone1;
+            }
+        }
+
+        private void PopulateOptionalFields(Record record, Permit permit)
+        {
+            // TODO permit.ProposedUse this should come from ASI field
+            permit.EstProjectCost = record.estimatedTotalJobCost;
+            //// TODO permit.AddedSqFt this should come from ASI field
+            //// TODO permit.MasterPermitNum this could be ASI or related record parent 
+            //// TODO permit.ExpiresDate this should be ASI field
+            //// TODO permit.COIssuedDate this should be ASI or from workflow history
+            permit.ProjectName = record.name;
+
+            // TODO should we reuse this for permit id instead?
+            permit.ProjectId = permit.MasterPermitNum;
+            //// TODO permit.TotalFinishedSqFt from ASI
+            //// TODO permit.TotalHeatedSqFt from ASI
+            //// TODO permit.TotalAccSqFt from ASI
+            //// TODO permit.TotalSprinkledSqFt from ASI
+            //// TODO permit.TotalUnfinishedSqFt from ASI
+            // TODO permit.TotalUnheatedSqFt from ASI
+            permit.Fee = record.totalFee;
+            permit.Jurisdiction = this.context.Agency.Id;
+            permit.Publisher = this.context.Agency.Name;
+        }
+
+        private Permit ToPermit(Record record)
+        {
+            Permit permit = new Permit();
+            this.PopulateRequiredFields(record, permit);
+            this.PopulateRecommendedFields(record, permit);
+            this.PopulateOptionalFields(record, permit);
             return permit;
         }
 
@@ -300,7 +495,7 @@ namespace OpenPermit.Accela
         private List<PermitStatus> GetPermitTimelineInternal(string permitNumber, string internalId)
         {
             var timeline = new List<PermitStatus>();
-            List<WorkflowTask> tasks = this.recApi.GetWorkflowTasks(internalId, this.BackgroundToken);
+            List<WorkflowTask> tasks = this.recApi.GetWorkflowTasksHistory(internalId, this.BackgroundToken);
 
             if (tasks != null)
             {
@@ -311,12 +506,13 @@ namespace OpenPermit.Accela
                         var status = new PermitStatus
                         {
                             PermitNum = permitNumber,
-                            StatusPrevious = task.description
+                            StatusPrevious = task.description + " - " + ((task.status != null) ? task.status.text : string.Empty)
                         };
 
-                        if (task.status != null)
+                        if (task.comment != null && task.commentDisplay == "Y")
                         {
-                            status.Comments = task.status.text;
+                            // TODO How to deal correctly with comment permission via task.commentPublicVisible?
+                            // status.Comments = task.comment
                         }
 
                         if (task.statusDate != null)
@@ -324,7 +520,7 @@ namespace OpenPermit.Accela
                             status.StatusPreviousDate = DateTime.Parse(task.statusDate);
                         }
 
-                        var mapping = this.config.Timeline.FirstOrDefault<TimelineMapping>(t => t.StatusPrevious == task.description);
+                        var mapping = this.config.Timeline.FirstOrDefault<TimelineMapping>(t => t.StatusPrevious == status.StatusPrevious);
                         status.StatusPreviousMapped = mapping.StatusPreviousMapped;
 
                         timeline.Add(status);
@@ -381,17 +577,19 @@ namespace OpenPermit.Accela
             {
                 Id = inspectionRecord.id.ToString(),
                 Inspector = inspectionRecord.inspectorFullName,
-                Result = inspectionRecord.status.text,
-                InspType = inspectionRecord.type.text,
                 PermitNum = inspectionRecord.recordId.customId,
                 
                 // TODO verify this
                 ScheduledDate = inspectionRecord.scheduledDate,
                 DesiredDate = inspectionRecord.scheduleDate,
-                InspectionNotes = inspectionRecord.resultComment,
                 RequestDate = inspectionRecord.requestDate,
                 InspectedDate = inspectionRecord.completedDate,
             };
+
+            if (inspectionRecord.type != null)
+            {
+                inspection.InspType = inspectionRecord.type.text;
+            }
 
             if (this.config.InspectionType != null)
             {
@@ -399,10 +597,21 @@ namespace OpenPermit.Accela
                 inspection.InspTypeMapped = mapping.InspectionTypeMapped;
             }
 
+            if (inspectionRecord.status != null)
+            {
+                inspection.Result = inspectionRecord.status.text;
+            }
+
             if (this.config.InspectionResult != null)
             {
                 var mapping = this.config.InspectionResult.SingleOrDefault<InspectionResultMapping>(m => m.Result == inspection.Result);
                 inspection.ResultMapped = mapping.ResultMapped;
+            }
+
+            if (inspectionRecord.resultComment != null && inspectionRecord.commentDisplay == "Y")
+            {
+                // TODO How to deal correctly with comment permission via inspectionRecord.commentPublicVisible?
+                inspection.InspectionNotes = inspectionRecord.resultComment;
             }
 
             return inspection;
