@@ -81,7 +81,7 @@ namespace OpenPermit.MDC.Sync
                 SendEMail(String.Format("Processed {0} existing permit records.", permits.Item2.Count));
 
                 Console.WriteLine("Populating Geography Field");
-                db.Execute("UPDATE Permit SET Location=geography::Point(Latitude, Longitude, 4326)");
+                db.Execute("UPDATE Permit SET Location=geography::Point(Latitude, Longitude, 4326) WHERE Location is NULL");
                 Console.WriteLine("Sync Job Done on: " + DateTime.Now.ToString());  
                 SendEMail("MDC OpenPermit Sync is done");
             }
@@ -109,6 +109,7 @@ namespace OpenPermit.MDC.Sync
                 note.Subject = "OpenPermit had some activity";
                 note.Body = message;
                 client.Send(note);
+                client.Dispose();
             }
             catch (Exception ex)
             {
