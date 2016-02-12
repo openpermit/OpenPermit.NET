@@ -65,7 +65,7 @@ namespace OpenPermit.Socrata
             throw new NotImplementedException();
         }
 
-        public List<Inspection> GetInspections(string permitNumber)
+        public virtual List<Inspection> GetInspections(string permitNumber)
         {
             throw new NotImplementedException();
         }
@@ -118,7 +118,7 @@ namespace OpenPermit.Socrata
             return result;
         }
 
-        private string DoGet(string url)
+        protected string DoGet(string url)
         {
             RestClient client = new RestClient();
             client.BaseUrl = new Uri(url);
@@ -135,6 +135,13 @@ namespace OpenPermit.Socrata
             }
 
             return response.Content;
+        }
+
+        protected virtual void SetJurisdiction(Permit permit)
+        {
+            // Override this on specific Agency Adapter
+            permit.Jurisdiction = "00000";
+            permit.Publisher = "ePermitHub";
         }
 
         private List<Permit> GetSocrataPermits(int limit, int offset)
@@ -166,9 +173,7 @@ namespace OpenPermit.Socrata
                     permit.StatusDate = Convert.ToDateTime(dynPermit[this.GetMapped("StatusDate")]);
                 }
 
-                // Move these to MDC Adapter
-                permit.Jurisdiction = "12086";
-                permit.Publisher = "Miami-Dade County, FL";
+                this.SetJurisdiction(permit);
 
                 permit.PermitType = dynPermit[this.GetMapped("PermitType")];
 
